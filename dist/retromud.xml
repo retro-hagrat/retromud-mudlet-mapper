@@ -1,0 +1,909 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+<ScriptPackage>
+<Script isActive="yes" isFolder="no">
+<name>retromud</name>
+<packageName></packageName>
+<script>-- 10_rm: namespace, version, lifecycle, event wiring.
+-- Contract (docs/design.md): one global namespace `rm`, nothing else leaks.
+-- Load/install (sysLoadEvent, sysInstall) runs rm.start(), which runs the
+-- init functions other modules appended to rm.inits (they build their
+-- temp triggers/aliases/UI). sysUninstallPackage runs rm.stop(), which
+-- kills every registered handler/trigger/alias id. Every id a module
+-- creates must be tracked here via rm.on / rm.alias so teardown is total.
+
+-- Re-running the script (Mudlet re-executes it on save): tear down first.
+local wasStarted = rm and rm.started
+if rm and rm.stop then rm.stop() end
+rm = {}
+rm.restart = wasStarted
+rm.name = "retromud"
+rm.version = "0.0.1"
+rm.inits = {}
+rm.started = false
+rm.mapping = false
+rm.ids = { handler = {}, trigger = {}, alias = {} }
+
+-- One tagged line per message: "[rmap] text". level colours the tag:
+-- "ok" green, "skip" yellow, "err" red, nil cyan, "plain" no tag, and
+-- "markup" no tag with the caller's own cecho colours (help body).
+-- Output can land on the prompt's line, so start a new line first
+-- when the last line already has text.
+-- getLines(from, to) excludes `to` (checked live), hence last + 1
+local COLOR = { ok = "green", skip = "yellow", err = "red" }
+function rm.out(text, level)
+    local last = getLastLineNumber("main")
+    local cur = getLines(last, last + 1)[1]
+    if cur and cur ~= "" then echo("\n") end
+    if level ~= "markup" then text = text:gsub("&lt;", "&lt;&lt;") end
+    if level == "plain" or level == "markup" then
+        cecho(text .. "\n")
+    else
+        cecho("&lt;" .. (COLOR[level] or "cyan") .. "&gt;[rmap]&lt;reset&gt; "
+            .. text .. "\n")
+    end
+end
+
+function rm.on(event, fn)
+    local id = registerAnonymousEventHandler(event, fn)
+    rm.ids.handler[#rm.ids.handler + 1] = id
+    return id
+end
+
+function rm.alias(pattern, fn)
+    -- unverified: tempAlias accepts a Lua function as its code argument
+    local id = tempAlias(pattern, fn)
+    rm.ids.alias[#rm.ids.alias + 1] = id
+    return id
+end
+
+function rm.start()
+    if rm.started then return end
+    rm.started = true
+    for i = 1, #rm.inits do rm.inits[i]() end
+end
+
+function rm.stop()
+    for i = 1, #rm.ids.handler do
+        killAnonymousEventHandler(rm.ids.handler[i])
+    end
+    for i = 1, #rm.ids.trigger do killTrigger(rm.ids.trigger[i]) end
+    for i = 1, #rm.ids.alias do killAlias(rm.ids.alias[i]) end
+    rm.job = nil
+    if rm.ids.timer then killTimer(rm.ids.timer) end
+    -- the one documented global exception (see 60_speedwalk)
+    if doSpeedWalk == rm.speedwalk then doSpeedWalk = nil end
+    rm.ids = { handler = {}, trigger = {}, alias = {} }
+    rm.started = false
+end
+
+rm.on("sysLoadEvent", function() rm.start() end)
+-- unverified: sysInstall is raised with (event, packageName) after an
+-- .mpackage install, and after this script body has already run
+rm.on("sysInstall", function(_, pkg)
+    if pkg == rm.name then rm.start() end
+end)
+rm.on("sysUninstallPackage", function(_, pkg)
+    if pkg == rm.name then rm.stop() end
+end)
+
+-- 20_settings: defaults + merge/load/save of user overrides.
+-- Contract (docs/design.md): defaults in code, user overrides merged from
+-- a table.save'd file in the profile dir; per-character prompt/exits
+-- patterns; persisted UI geometry. No behavior. Phase 0 holds defaults
+-- only; persistence arrives with the first setting that needs it.
+
+rm.settings = {
+    -- Fallback prompt pattern (Lua pattern), used when the connection
+    -- sends no GA and by offline replay. Not end-anchored. See
+    -- docs/output-format.md "Prompt patterns".
+    promptPattern = "^Hp:%s*%d+/%d+%s+Sp:%s*%d+/%d+%s+Ep:%s*%d+/%d+",
+
+    -- Exits grammar (docs/output-format.md "Exits grammar"). The solo
+    -- pattern is lazy so the trailing period is not captured.
+    exitsMulti = "^Obvious exits are:%s+(.*)",
+    exitsSolo = "^The only obvious exit is%s+(%S-)%.?%s*$",
+
+    -- Noise lines skipped when looking for the room title.
+    ignore = {
+        "^You are flying%.$",
+        "^.- starts using ",
+        "^ %*%*%* NEW ROUND %*%*%*",
+        "^%-%-%- HP:",
+        "^You hit ", "^You do not hit ", "^You attack ",
+        " fails to hit you%.$", " hits you ",
+        "is DEAD, R%.I%.P%.$", "^You can act again%.$",
+        "^The clouds begin to break apart",
+    },
+
+    -- Lines buffered with no prompt before reporting "no usable prompt".
+    maxBlockLines = 500,
+
+    -- Seconds before an unresolved expectation is dropped (a silent or
+    -- failed command must never stall the queue).
+    expectTimeout = 10,
+
+    -- Command classification (docs/mapper-protocol.md). First word of
+    -- the sent command; extend during calibration.
+    verifyVerbs = { look = true, l = true, glance = true },
+    previewVerbs = { peer = true, scry = true },
+
+    -- Lines that cancel the head expectation (a move that did not move).
+    moveFail = { "^You can't go that way!" },
+
+    -- Fingerprint search radius (Chebyshev) for non-Euclidean links.
+    maxSearchDistance = 5,
+    -- Freeform verbs that are vertical in meaning: layers to climb (layout
+    -- only; the link is by room id either way).
+    freeformDz = { climb = 1 },
+    areaName = "RetroMUD",
+
+    -- Cardinal directions: abbreviation, Mudlet direction number
+    -- (setExit/setExitStub), coordinate delta, opposite. in/out are not
+    -- here: they have no delta, so they are freeform (special) exits.
+    dirs = {
+        north     = { abbr = "n",  num = 1,  dx = 0,  dy = 1,  dz = 0,  opp = "south" },
+        northeast = { abbr = "ne", num = 2,  dx = 1,  dy = 1,  dz = 0,  opp = "southwest" },
+        northwest = { abbr = "nw", num = 3,  dx = -1, dy = 1,  dz = 0,  opp = "southeast" },
+        east      = { abbr = "e",  num = 4,  dx = 1,  dy = 0,  dz = 0,  opp = "west" },
+        west      = { abbr = "w",  num = 5,  dx = -1, dy = 0,  dz = 0,  opp = "east" },
+        southeast = { abbr = "se", num = 7,  dx = 1,  dy = -1, dz = 0,  opp = "northwest" },
+        southwest = { abbr = "sw", num = 8,  dx = -1, dy = -1, dz = 0,  opp = "northeast" },
+        south     = { abbr = "s",  num = 6,  dx = 0,  dy = -1, dz = 0,  opp = "north" },
+        up        = { abbr = "u",  num = 9,  dx = 0,  dy = 0,  dz = 1,  opp = "down" },
+        down      = { abbr = "d",  num = 10, dx = 0,  dy = 0,  dz = -1, opp = "up" },
+    },
+}
+
+-- 30_capture: line buffer -&gt; room-block detection -&gt; rm.onRoom event.
+-- Contract (docs/design.md, docs/output-format.md): rm.onLine(line) is
+-- called once per received line (a trigger live, the replay harness
+-- offline). Segments end at a prompt: isPrompt() (GA/EOR) live, else
+-- rm.settings.promptPattern. Each exits line in a segment raises
+-- raiseEvent("rm.onRoom", {name=, exits={...}, lines={...},
+-- fingerprint=}), then rm.onSegment(n); a move-fail line raises
+-- rm.onMoveFail. Knows nothing about the map.
+
+rm.cap = { buf = {}, warned = false }
+
+local function isNoise(line)
+    if line:find("^%s*$") then return true end
+    for i = 1, #rm.settings.ignore do
+        if line:find(rm.settings.ignore[i]) then return true end
+    end
+    return false
+end
+
+-- Exits starting at buf[i]: returns exits list, index of last line.
+local function parseExits(buf, i)
+    local s = rm.settings
+    local solo = buf[i]:match(s.exitsSolo)
+    if solo then return { solo:lower() }, i end
+    local rest = buf[i]:match(s.exitsMulti)
+    if not rest then return nil end
+    local j = i
+    while not rest:find("%.%s*$") do
+        j = j + 1
+        if not buf[j] then return nil end
+        if not isNoise(buf[j]) then rest = rest .. " " .. buf[j] end
+    end
+    local exits = {}
+    for part in rest:gsub("%.%s*$", ""):gmatch("[^,]+") do
+        local name = part:match("^%s*(.-)%s*$"):gsub("^and%s+", ""):lower()
+        if name ~= "" then exits[#exits + 1] = name end
+    end
+    return exits, j
+end
+
+local function fingerprint(name, exits)
+    local sorted = {}
+    for i = 1, #exits do sorted[i] = exits[i] end
+    table.sort(sorted)
+    return name .. "|" .. table.concat(sorted, ",")
+end
+
+-- Walk back from each exits line to the description start (first
+-- exactly-two-space-indented line, which may be just the two spaces;
+-- deeper indents are list continuations); the title is the non-noise
+-- line above it.
+local function scan(buf)
+    local lo, i = 1, 1
+    while i &lt;= #buf do
+        local exits, last = parseExits(buf, i)
+        if exits then
+            local d = i - 1
+            while d &gt;= lo and not (buf[d]:find("^  %S") or buf[d] == "  ") do
+                d = d - 1
+            end
+            local t = d - 1
+            while t &gt;= lo and isNoise(buf[t]) do t = t - 1 end
+            if d &gt;= lo and t &gt;= lo then
+                local lines = {}
+                for k = t, last do lines[#lines + 1] = buf[k] end
+                raiseEvent("rm.onRoom", {
+                    name = buf[t], exits = exits, lines = lines,
+                    fingerprint = fingerprint(buf[t], exits),
+                })
+            end
+            lo, i = last + 1, last + 1
+        else
+            i = i + 1
+        end
+    end
+end
+
+-- Raises rm.onRoom per room, then rm.onSegment(n) with the count of
+-- non-noise lines, so the tracker can close commands that print no room.
+local function flush()
+    local buf = rm.cap.buf
+    rm.cap.buf = {}
+    scan(buf)
+    local n = 0
+    for i = 1, #buf do
+        if not isNoise(buf[i]) then n = n + 1 end
+    end
+    raiseEvent("rm.onSegment", n)
+end
+
+function rm.onLine(line)
+    local c = rm.cap
+    if isPrompt() or line:find(rm.settings.promptPattern) then
+        c.warned = false
+        flush()
+        return
+    end
+    for i = 1, #rm.settings.moveFail do
+        if line:find(rm.settings.moveFail[i]) then
+            raiseEvent("rm.onMoveFail")
+            break
+        end
+    end
+    c.buf[#c.buf + 1] = line
+    if #c.buf &gt; rm.settings.maxBlockLines then
+        if not c.warned then
+            c.warned = true
+            rm.out("no usable prompt (no GA, and the prompt "
+                .. "pattern never matched in " .. #c.buf .. " lines); "
+                .. "set rm.settings.promptPattern", "err")
+        end
+        flush()
+    end
+end
+
+rm.inits[#rm.inits + 1] = function()
+    -- unverified: tempRegexTrigger("^", fn) fires for every line, and
+    -- the global `line` holds the current line inside fn
+    local id = tempRegexTrigger("^", function() rm.onLine(line) end)
+    rm.ids.trigger[#rm.ids.trigger + 1] = id
+end
+
+-- 40_tracker: expectation queue and sync state.
+-- Contract (docs/design.md, docs/mapper-protocol.md): sysDataSendRequest
+-- pushes one classified expectation (VERIFY / PREVIEW / ADVANCE /
+-- MAYBE_MOVE) per sent command; sync state is SYNCED / UNSYNCED /
+-- PENDING; each rm.onRoom block resolves the queue head. Decides
+-- advance/verify/preview. Never writes the graph (rm.build does).
+-- Rules 3 and 4 of the protocol hold by construction: T.send below is
+-- the only function that pushes onto the queue; no module calls
+-- sendSocket or pushes directly.
+
+rm.track = { q = {}, pos = nil, handled = false, following = false }
+local T = rm.track
+
+-- name or abbreviation -&gt; full direction name
+local dirAlias = {}
+for name, d in pairs(rm.settings.dirs) do
+    dirAlias[name] = name
+    dirAlias[d.abbr] = name
+end
+
+function rm.now() return os.time() end
+
+local function classify(cmd)
+    local word = cmd:match("^(%S+)")
+    if rm.settings.verifyVerbs[word] then return "VERIFY" end
+    if rm.settings.previewVerbs[word] then return "PREVIEW" end
+    if dirAlias[cmd] then return "ADVANCE", dirAlias[cmd] end
+    return "MAYBE_MOVE"
+end
+
+-- An expectation can carry cb(block_or_nil, why): called when it
+-- resolves (block), is cancelled (nil, "fail"), closed with no room
+-- (nil) or expires (nil, "timeout"). Used by speedwalk/scan/where.
+local function done(e, b, why)
+    if e and e.cb then e.cb(b, why) end
+end
+
+local function expire()
+    local cutoff = rm.now() - rm.settings.expectTimeout
+    local dead = {}
+    while T.q[1] and T.q[1].t &lt; cutoff do
+        dead[#dead + 1] = table.remove(T.q, 1)
+    end
+    for i = 1, #dead do done(dead[i], nil, "timeout") end
+end
+
+-- SYNCED / PENDING / UNSYNCED (PENDING = synced with a command in flight)
+function T.state()
+    if not T.pos then return "UNSYNCED" end
+    if #T.q &gt; 0 then return "PENDING" end
+    return "SYNCED"
+end
+
+-- Rule 1 and 2: skip empty commands, one expectation per embedded line.
+function T.send(_, cmd)
+    for raw in (tostring(cmd) .. "\n"):gmatch("(.-)\r?\n") do
+        local part = raw:lower():match("^%s*(.-)%s*$")
+        if part ~= "" then
+            expire()
+            local kind, dir = classify(part)
+            T.q[#T.q + 1] = { kind = kind, cmd = part, dir = dir,
+                t = rm.now(), cb = T.hook }
+            T.hook = nil
+            -- unverified: `follow` syntax; "follow self"/"unfollow" end it
+            local verb, arg = part:match("^(%S+)%s*(%S*)")
+            if verb == "follow" then
+                T.following = arg ~= "" and arg ~= "self"
+            elseif verb == "unfollow" then
+                T.following = false
+            end
+        end
+    end
+end
+
+-- Internal sends (speedwalk, scan, where) go through send() so that
+-- T.send above still pushes the expectation; cb rides on it.
+function T.exec(cmd, cb)
+    T.hook = cb
+    -- unverified: sysDataSendRequest handlers run synchronously in send()
+    send(cmd)
+    T.hook = nil
+    -- a silent game must not stall a job: expire() runs from this timer
+    if rm.ids.timer then killTimer(rm.ids.timer) end
+    -- unverified: tempTimer(seconds, fn) returns a timer id for killTimer
+    rm.ids.timer = tempTimer(rm.settings.expectTimeout + 1, expire)
+end
+
+local function resolve(e, b)
+    if e.kind == "PREVIEW" then return end
+    local cur = T.pos
+    if not cur then
+        -- never guess: only a unique fingerprint match re-syncs
+        T.pos = rm.build.find(b.fingerprint)
+    elseif e.kind == "ADVANCE" then
+        T.pos = rm.build.advance(cur, e.dir, b)
+    elseif rm.build.fp(cur) == b.fingerprint then    -- VERIFY / no move
+        return
+    elseif e.kind == "VERIFY" then
+        T.pos = rm.build.find(b.fingerprint)
+    else
+        T.pos = rm.build.special(cur, e.cmd, b)
+    end
+end
+
+-- Keep the Mudlet map pane on the player's room (it follows the area).
+-- unverified: centerview(id) switches the pane to that room's area.
+function T.focus()
+    if T.pos then centerview(T.pos) end
+end
+
+function T.onRoom(_, b)
+    expire()
+    T.handled = true
+    local e = table.remove(T.q, 1)
+    if not e then T.pos = nil return end             -- SPONTANEOUS
+    resolve(e, b)
+    T.focus()
+    done(e, b)
+end
+
+-- A failed move cancels the head expectation; nothing was created on send.
+function T.onMoveFail()
+    expire()
+    T.handled = true
+    done(table.remove(T.q, 1), nil, "fail")
+end
+
+-- A prompt closed a segment with n real lines. If no room block and no
+-- fail message already resolved the head, the head command is done.
+-- An ADVANCE head is the exception: its ack is the room block or the
+-- fail line, so unrelated chatter before it must not close it (timeout
+-- covers a move that prints neither).
+function T.onSegment(_, n)
+    expire()
+    local e, head = nil, T.q[1]
+    if not T.handled and n &gt; 0 and head and head.kind ~= "ADVANCE" then
+        e = table.remove(T.q, 1)
+    end
+    T.handled = false
+    done(e, nil)
+end
+
+-- Explicit orphan creation / re-sync entry point (used by `rmap where`).
+function T.adopt(b) T.pos = rm.build.adopt(b) T.focus() end
+
+rm.inits[#rm.inits + 1] = function()
+    rm.on("sysDataSendRequest", T.send)
+    rm.on("rm.onRoom", T.onRoom)
+    rm.on("rm.onMoveFail", T.onMoveFail)
+    rm.on("rm.onSegment", T.onSegment)
+end
+
+-- 50_builder: the ONLY module that writes the map graph.
+-- Contract (docs/design.md, docs/mapper-protocol.md): fingerprint
+-- matching, coordinate-first dedupe, room/area/exit creation, stub
+-- semantics, special exits. Each decision function returns the room id
+-- the player is now in, or nil when the map disagrees with the block
+-- (the tracker then goes UNSYNCED; nothing is guessed or created).
+-- Fingerprints persist as room user data "fp".
+
+rm.build = {}
+local B = rm.build
+-- Auto-created rooms, newest last: { id, from, dir | cmd } (for undo).
+B.created = {}
+
+local function areaId()
+    local name = rm.settings.areaName
+    -- unverified: getAreaTable() returns {name = id}; addAreaName returns the id
+    return getAreaTable()[name] or addAreaName(name)
+end
+
+function B.fp(id)
+    -- unverified: getRoomUserData returns "" when the key is unset
+    return getRoomUserData(id, "fp")
+end
+
+local function roomAt(x, y, z)
+    -- unverified: getRoomsByPosition(area, x, y, z) returns a table of ids
+    for _, id in pairs(getRoomsByPosition(areaId(), x, y, z)) do
+        return id
+    end
+end
+
+local function candidates(fp)
+    local out = {}
+    -- unverified: searchRoomUserData(key, value) returns the matching room ids
+    for _, id in pairs(searchRoomUserData("fp", fp)) do
+        if getRoomArea(id) == areaId() then out[#out + 1] = id end
+    end
+    return out
+end
+B.candidates = candidates
+
+-- The one room with this fingerprint, or nil if none or ambiguous.
+function B.find(fp)
+    local c = candidates(fp)
+    if #c == 1 then return c[1] end
+end
+
+local function link(from, to, dir)
+    local n = rm.settings.dirs[dir].num
+    -- unverified: setExit takes the direction number 1-12
+    setExit(from, to, n)
+    -- unverified: setExit leaves a stub in place, so clear it
+    setExitStub(from, n, false)
+end
+
+local function create(b, x, y, z, peer)
+    local id = createRoomID()
+    addRoom(id)
+    setRoomArea(id, areaId())
+    setRoomName(id, b.name)
+    setRoomCoordinates(id, x, y, z)
+    setRoomUserData(id, "fp", b.fingerprint)
+    setRoomUserData(id, "source", peer and "peer" or "walk")
+    return id
+end
+
+-- Walking into a peer stub confirms it.
+local function confirm(id)
+    if getRoomUserData(id, "source") == "peer" then
+        setRoomUserData(id, "source", "walk")
+    end
+end
+
+-- Listed cardinal exits not linked yet become stubs. Freeform exits
+-- (gate, leave) have no stub form; they link when first walked.
+local function stub(id, b)
+    -- unverified: getRoomExits returns {directionName = roomId}
+    local linked = getRoomExits(id)
+    for _, ex in ipairs(b.exits) do
+        local d = rm.settings.dirs[ex]
+        if d and not linked[ex] then setExitStub(id, d.num, true) end
+    end
+end
+
+-- Existing room one step in dir: a real link first (second result true),
+-- else whatever sits on the expected cell (a guess; see B.advance).
+local function neighbor(from, dir)
+    local to = getRoomExits(from)[dir]
+    if to then return to, true end
+    local d = rm.settings.dirs[dir]
+    local x, y, z = getRoomCoordinates(from)
+    return roomAt(x + d.dx, y + d.dy, z + d.dz), false
+end
+
+-- The grid is only a layout: the MUD's exits need not fit on it. The
+-- cell (x, y, z) if free, else the nearest free cell on that level that
+-- is not in `reserved` ("x,y,z" keys), ties broken by distance to the
+-- source cell (sx, sy) so the room stays close to where it came from.
+local function freeCell(x, y, z, reserved, sx, sy)
+    reserved = reserved or {}
+    for r = 0, math.huge do
+        local bx, by, bd
+        for i = -r, r do
+            for j = -r, r do
+                local cx, cy = x + i, y + j
+                if math.max(math.abs(i), math.abs(j)) == r
+                    and not roomAt(cx, cy, z)
+                    and not reserved[cx .. "," .. cy .. "," .. z] then
+                    local d = sx and (cx - sx) * (cx - sx)
+                        + (cy - sy) * (cy - sy) or 0
+                    if not bd or d &lt; bd then bx, by, bd = cx, cy, d end
+                end
+            end
+        end
+        if bd then return bx, by, z end
+    end
+end
+
+-- Cells that `from`'s other listed cardinal exits will want, so a nudged
+-- room does not steal them (a nudge must not force the next nudge).
+local function reservedFor(from, dir)
+    local out = {}
+    local x, y, z = getRoomCoordinates(from)
+    for ex in (B.fp(from):match("|(.*)$") or ""):gmatch("[^,]+") do
+        local d = rm.settings.dirs[ex]
+        if d and ex ~= dir then
+            out[(x + d.dx) .. "," .. (y + d.dy) .. "," .. (z + d.dz)] = true
+        end
+    end
+    return out
+end
+
+-- Non-Euclidean link (decision step 2): the single nearby room with this
+-- fingerprint whose way back toward us is not already linked elsewhere.
+local function near(from, fp, opp)
+    local x, y, z = getRoomCoordinates(from)
+    local hit
+    for _, id in ipairs(candidates(fp)) do
+        local a, b, c = getRoomCoordinates(id)
+        local back = getRoomExits(id)[opp]
+        -- the room already linked behind us is never "ahead" (a
+        -- corridor of identical rooms would fold back on itself)
+        if id ~= from and (not back or back == from)
+            and getRoomExits(from)[opp] ~= id
+            and math.max(math.abs(a - x), math.abs(b - y),
+                math.abs(c - z)) &lt;= rm.settings.maxSearchDistance then
+            if hit then return nil end               -- ambiguous
+            hit = id
+        end
+    end
+    return hit
+end
+
+-- peer: a `peer` preview from `from` (rmap scan): new rooms are stubs and
+-- the way back is left as a soft exit stub, never a real link.
+function B.advance(from, dir, b, peer)
+    local d = rm.settings.dirs[dir]
+    local to, linked = neighbor(from, dir)
+    -- An unlinked room on the expected cell is only a coordinate guess;
+    -- a different room there means the map does not fit the grid, so
+    -- ignore it (links, not cells, are the truth).
+    if to and not linked and B.fp(to) ~= b.fingerprint then to = nil end
+    to = to or near(from, b.fingerprint, d.opp)
+    if to then
+        if B.fp(to) ~= b.fingerprint then return nil end
+        link(from, to, dir)
+        if not peer then confirm(to) end
+        return to
+    end
+    local x, y, z = getRoomCoordinates(from)
+    x, y, z = freeCell(x + d.dx, y + d.dy, z + d.dz,
+        reservedFor(from, dir), x, y)
+    to = create(b, x, y, z, peer)
+    B.created[#B.created + 1] = { id = to, from = from, dir = dir }
+    link(from, to, dir)
+    for _, ex in ipairs(b.exits) do
+        if ex == d.opp and not peer then link(to, from, d.opp) end
+    end
+    stub(to, b)
+    return to
+end
+
+-- Freeform command (gate, leave, sungate...) that landed in a different
+-- room: a special exit to a known or new room.
+function B.special(from, cmd, b, peer)
+    -- unverified: getSpecialExitsSwap(id) returns {command = roomId}
+    local to = getSpecialExitsSwap(from)[cmd] or B.find(b.fingerprint)
+    if to then
+        if B.fp(to) ~= b.fingerprint then return nil end
+        if not peer then confirm(to) end
+    else
+        local x, y, z = getRoomCoordinates(from)
+        local dz = rm.settings.freeformDz[cmd]
+        if dz then
+            x, y, z = freeCell(x, y, z + dz)
+        else
+            repeat x = x + 1 until not roomAt(x, y, z)  -- nearest free cell
+        end
+        to = create(b, x, y, z, peer)
+        B.created[#B.created + 1] = { id = to, from = from, cmd = cmd }
+        stub(to, b)
+    end
+    addSpecialExit(from, to, cmd)
+    return to
+end
+
+-- Orphan room for an explicit sync (`rmap where`); reuses a unique match.
+function B.adopt(b)
+    local to = B.find(b.fingerprint)
+    if to then return to end
+    local x = 0
+    while roomAt(x, 0, 0) do x = x + 1 end
+    to = create(b, x, 0, 0)
+    B.created[#B.created + 1] = { id = to }
+    stub(to, b)
+    return to
+end
+
+-- Remove exactly the newest auto-created room and the link that led to
+-- it; the exit it came through goes back to a stub. Returns its record.
+function B.undo()
+    local e = table.remove(B.created)
+    if not e then return nil end
+    if e.dir then
+        local n = rm.settings.dirs[e.dir].num
+        -- unverified: setExit(from, -1, dir) removes the exit
+        setExit(e.from, -1, n)
+        setExitStub(e.from, n, true)
+    elseif e.cmd then
+        -- unverified: removeSpecialExit(id, command) exists
+        removeSpecialExit(e.from, e.cmd)
+    end
+    e.name = getRoomName(e.id)
+    -- unverified: deleteRoom also drops exits other rooms hold into it
+    deleteRoom(e.id)
+    return e
+end
+
+-- 60_speedwalk: doSpeedWalk() contract and stepping engine.
+-- Contract (docs/design.md): reads speedWalkDir/speedWalkPath; confirmed
+-- per step (send, then wait for a resolved block); aborts on move-fail.
+-- Mudlet calls the global doSpeedWalk() after a path is computed
+-- (gotoRoom, map clicks): speedWalkDir is the list of commands,
+-- speedWalkPath the list of room ids each step should land in. It is
+-- the one global outside `rm` (set at start, cleared by rm.stop).
+-- A job is one command sequence at a time, tracked in rm.job.
+
+local T = rm.track
+
+-- Shared guard for every job that sends commands (speedwalk, scan, where).
+function rm.canRun()
+    if T.following then
+        rm.out("refused while following someone", "skip")
+    elseif rm.job then
+        rm.out("busy with " .. rm.job, "skip")
+    else
+        return true
+    end
+end
+
+function rm.speedwalk()
+    if not rm.canRun() then return end
+    local dirs, path = speedWalkDir, speedWalkPath
+    -- unverified: speedWalkDir/speedWalkPath are tables set by Mudlet
+    -- (path entries may be strings), and speedWalkPath[i] is the room
+    -- reached after step i (the start room is not listed)
+    if type(dirs) ~= "table" or #dirs == 0 then return end
+    rm.job = "speedwalk"
+    local i = 0
+    local function step()
+        i = i + 1
+        if i &gt; #dirs then
+            rm.job = nil
+            rm.out("speedwalk: arrived", "ok")
+            return
+        end
+        T.exec(dirs[i], function(b, why)
+            local want = path and tonumber(path[i])
+            if b and T.pos and (not want or T.pos == want) then
+                return step()
+            end
+            rm.job = nil
+            rm.out("speedwalk stopped at step " .. i .. " ("
+                .. dirs[i] .. "): " .. (why or "unexpected room"), "skip")
+        end)
+    end
+    step()
+end
+
+rm.inits[#rm.inits + 1] = function()
+    doSpeedWalk = rm.speedwalk
+end
+
+-- 70_ui: Geyser container, Geyser.Mapper pane, status label, buttons.
+-- Contract (docs/design.md): geometry persisted via settings; `rmap ui off`
+-- kill-switch; pure consumer of tracker/builder state.
+-- Phase 0: empty; implemented in Phase 5.
+
+-- 80_commands: all aliases (`rm &lt;command&gt;`).
+-- Contract (docs/design.md): rmap start/stop/goto/path/where/scan/undo/fix/
+-- save/load/prompt(Phase 6)/exits/fail/debug/ui/reload/help. Pure
+-- consumer of the other modules.
+-- Phase 3: where, scan, undo (start/stop only toggle rm.mapping, which
+-- lets `rmap where` create an orphan room when nothing matches).
+
+rm.commands = {}
+
+function rm.commands.help()
+    rm.out("retromud " .. rm.version .. " - RetroMUD auto-mapper")
+    for _, c in ipairs({
+        { "rmap help", "show this text" },
+        { "rmap start|stop", "mapping on/off (where may create a room)" },
+        { "rmap where", "re-sync position from the room you are in" },
+        { "rmap scan", "peer every exit of this room and map the stubs" },
+        { "rmap undo", "remove the last auto-created room" },
+    }) do
+        rm.out(string.format("  &lt;cyan&gt;%-16s&lt;reset&gt;%s", c[1], c[2]), "markup")
+    end
+end
+
+local T, B = rm.track, rm.build
+
+function rm.commands.start() rm.mapping = true rm.out("mapping on", "ok") end
+function rm.commands.stop() rm.mapping = false rm.out("mapping off", "ok") end
+
+local function finish(msg, cb, ok)
+    rm.job = nil
+    T.focus()
+    if msg then rm.out(msg, ok and "ok" or "skip") end
+    if cb then cb(ok) end
+end
+
+-- Neighbour of room `id` through exit `ex` (linked or special), or nil.
+local function beyond(id, ex)
+    return getRoomExits(id)[ex] or getSpecialExitsSwap(id)[ex]
+end
+
+-- Peer each exit of `b` and drop candidate rooms whose known neighbour
+-- through that exit has another fingerprint. Calls done(room or nil).
+local function narrow(c, b, i, done)
+    if #c == 1 then return done(c[1]) end
+    local ex = b.exits[i]
+    if not ex then return done(nil) end
+    T.exec("peer " .. ex, function(pb)
+        if pb then
+            local keep = {}
+            for _, id in ipairs(c) do
+                local n = beyond(id, ex)
+                if not n or B.fp(n) == pb.fingerprint then
+                    keep[#keep + 1] = id
+                end
+            end
+            c = keep
+        end
+        narrow(c, b, i + 1, done)
+    end)
+end
+
+-- rmap where: look; unique fingerprint -&gt; synced; several -&gt; disambiguate
+-- by peering; none -&gt; report (or adopt when mapping). cb(ok) when done.
+local function where(cb)
+    T.exec("look", function(b)
+        if not b then return finish("where: no room seen", cb, false) end
+        local c = B.candidates(b.fingerprint)
+        if #c == 1 then
+            T.pos = c[1]
+            return finish("where: synced", cb, true)
+        end
+        if #c == 0 then
+            if not rm.mapping then
+                return finish("where: no match in the map", cb, false)
+            end
+            T.adopt(b)
+            return finish("where: created a new room", cb, true)
+        end
+        narrow(c, b, 1, function(id)
+            if not id then
+                return finish("where: could not narrow to one room", cb, false)
+            end
+            T.pos = id
+            finish("where: synced", cb, true)
+        end)
+    end)
+end
+
+function rm.commands.where()
+    if not rm.canRun() then return end
+    rm.job = "where"
+    where()
+end
+
+-- rmap scan: peer every exit that is not already linked to a real room.
+function rm.commands.scan()
+    if not rm.canRun() then return end
+    rm.job = "scan"
+    local function scan()
+        T.exec("look", function(b)
+            local cur = T.pos
+            if not b or not cur or B.fp(cur) ~= b.fingerprint then
+                return finish("scan: position lost", nil)
+            end
+            -- cardinals first: freeform rooms take the nearest free cell
+            -- and must not squat on a cardinal neighbour's cell
+            local order = {}
+            for _, want in ipairs({ true, false }) do
+                for _, ex in ipairs(b.exits) do
+                    if (rm.settings.dirs[ex] ~= nil) == want then
+                        order[#order + 1] = ex
+                    end
+                end
+            end
+            local made, i = 0, 0
+            local function nextExit()
+                i = i + 1
+                local ex = order[i]
+                if not ex then
+                    return finish("scan: done, " .. made .. " new", nil, true)
+                end
+                local to = beyond(cur, ex)
+                if to and getRoomUserData(to, "source") ~= "peer" then
+                    return nextExit()
+                end
+                T.exec("peer " .. ex, function(pb)
+                    if pb then
+                        local n = #B.created
+                        if rm.settings.dirs[ex] then
+                            B.advance(cur, ex, pb, true)
+                        else
+                            B.special(cur, ex, pb, true)
+                        end
+                        made = made + #B.created - n
+                    end
+                    nextExit()
+                end)
+            end
+            nextExit()
+        end)
+    end
+    if T.state() ~= "UNSYNCED" then return scan() end
+    where(function(ok)
+        if not ok then return finish("scan: could not sync", nil) end
+        rm.job = "scan"
+        scan()
+    end)
+end
+
+function rm.commands.undo()
+    local e = B.undo()
+    if not e then return rm.out("undo: nothing to undo", "skip") end
+    if T.pos == e.id then T.pos = nil end
+    rm.out("undo: removed '" .. e.name .. "' (room " .. e.id .. ")", "ok")
+end
+
+function rm.command(arg)
+    local cmd = arg:match("^%s*(%S*)")
+    if cmd == "" then cmd = "help" end
+    local fn = rm.commands[cmd]
+    if fn then
+        fn()
+    else
+        rm.out("unknown command '" .. cmd .. "'. Try 'rmap help'.", "err")
+    end
+end
+
+rm.inits[#rm.inits + 1] = function()
+    -- unverified: an unmatched optional group leaves matches[2] nil or ""
+    rm.alias("^rmap( .*)?$", function() rm.command(matches[2] or "") end)
+end
+
+-- Last module: a script re-run (save in the editor) does not raise
+-- sysLoadEvent again, so resume if the previous instance was running.
+if rm.restart then rm.restart = nil rm.start() end
+</script>
+<eventHandlerList />
+</Script>
+</ScriptPackage>
+</MudletPackage>

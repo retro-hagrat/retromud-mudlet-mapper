@@ -1,0 +1,14 @@
+# Hand-written oracle. Capture starts mid-stream at a prompt.
+# Ambiguity: 'set width 80' (line 3), 'look girl' (26, 99) and 'insert' (114) are typed alone on own line; counted as SEND.
+SEND|set width 80
+SEND|look
+ROOM|Orange Tsoda Pool|northeast,west
+SEND|kill girl
+SEND|look girl
+SEND|look
+ROOM|Orange Tsoda Pool|northeast,west
+SEND|look girl
+SEND|look corpse
+SEND|gg
+SEND|get gold from corpse
+SEND|insert

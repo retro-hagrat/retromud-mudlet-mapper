@@ -1,0 +1,41 @@
+# Hand-written oracle. First block has no SEND before it.
+# Ambiguity: commands typed alone on their own line during combat (look tooth, look, look tummyache, show skills, insert, look girl) counted as SEND.
+# Ambiguity: 'look tummyache' at line 166 is followed by a NEW ROUND interleaved before its output; no exits so no ROOM.
+# Ambiguity: the 'look' at line 142 has combat round lines before it in the same buffer; ROOM is still emitted.
+ROOM|North of Kelvin on Xavien Street|north,south
+SEND|s
+ROOM|Xavien and Kelvin|east,north,south,west
+SEND|e
+ROOM|Between Xavien and Platinum on Kelvin|east,west
+SEND|s
+SEND|e
+ROOM|Kelvin and Platinum|east,south,west
+SEND|s
+ROOM|Platinum Street|east,north,south,west
+SEND|e
+ROOM|The Gate to the Tsoda Pools|gate,west
+SEND|gate
+ROOM|Up the hill|leave,up
+SEND|up
+ROOM|Top of the hill|down,north
+SEND|wield fellblade
+SEND|n
+ROOM|Pathway to the Tsoda pools|north,south
+SEND|get berry
+SEND|n
+ROOM|The pathway|north,northeast,northwest,south
+SEND|ne
+ROOM|The pathway|east,southwest
+SEND|e
+ROOM|Orange Tsoda Pool|northeast,west
+SEND|look tooth
+SEND|look girl
+SEND|km
+SEND|look
+ROOM|Orange Tsoda Pool|northeast,west
+SEND|look tummyache
+SEND|show skills
+SEND|insert
+SEND|look
+ROOM|Orange Tsoda Pool|northeast,west
+SEND|get gold

@@ -1,0 +1,23 @@
+# Hand-written oracle. Line 1 block (after linkdeath info) has no SEND before it.
+# Ambiguity: 'map' and 'insert'-style commands are typed alone on their own line; counted as SEND.
+# Ambiguity: arena title 'A path leading to the arena.' is preceded by noise 'You are flying.'; trailing period kept.
+# Ambiguity: arena room has a command list with indented lines after the description; not a room anchor.
+ROOM|Hagrat's laboratory|clubhouse,eldoria,esuth,keyguild,magic_college,nign,nscar,poor_house,rock_quarry,sungate,wander,wedon,wizguild
+SEND|look
+ROOM|Hagrat's laboratory|clubhouse,eldoria,esuth,keyguild,magic_college,nign,nscar,poor_house,rock_quarry,sungate,wander,wedon,wizguild
+SEND|set width 80
+SEND|look
+ROOM|Hagrat's laboratory|clubhouse,eldoria,esuth,keyguild,magic_college,nign,nscar,poor_house,rock_quarry,sungate,wander,wedon,wizguild
+SEND|sungate
+ROOM|Sauronan City - Sun Gate|arena,east,gate,northeast,northwest,south,southeast,southwest,tavern,up,west,zoo
+SEND|map
+SEND|arena
+ROOM|A path leading to the arena.|away
+SEND|away
+ROOM|Sauronan City - Sun Gate|arena,east,gate,northeast,northwest,south,southeast,southwest,tavern,up,west,zoo
+SEND|zoo
+ROOM|Entrance to the zoo|away
+SEND|peer away
+ROOM|Sauronan City - Sun Gate|arena,east,gate,northeast,northwest,south,southeast,southwest,tavern,up,west,zoo
+SEND|away
+ROOM|Sauronan City - Sun Gate|arena,east,gate,northeast,northwest,south,southeast,southwest,tavern,up,west,zoo

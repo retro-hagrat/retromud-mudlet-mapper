@@ -1,0 +1,6 @@
+mpackage = [[retromud]]
+author = [[retromud contributors]]
+title = [[RetroMUD mapper]]
+description = [[Trigger-based auto-mapper and Geyser UI for RetroMUD (no GMCP).]]
+version = [[0.0.1]]
+created = [[2026-11-13]]

@@ -1,0 +1,172 @@
+[info] Hagrat recovers from linkdeath
+Hagrat's laboratory
+  In the heart of a dimly lit stone chamber, the medieval alchemist's laboratory unfolds like a mystical tableau. Tables
+laden with intricate brass instruments, glass vials, and bubbling concoctions line the room, illuminated by the soft
+glow of flickering candles. A large, ornate furnace stands as the focal point, its flames dancing with an ethereal
+intensity. Ancient tomes filled with esoteric symbols and alchemical recipes are scattered across dusty shelves, while
+the air carries the heady scent of herbs, metallic elements, and the occasional waft of unknown elixirs. The alchemist,
+cloaked in worn robes, moves with a purpose amidst this arcane symphony, seeking the elusive secrets that bridge the
+realms of science and magic.
+ It is pretty dark here.
+Obvious exits are: clubhouse, eldoria, esuth, keyguild, magic_college, nign, nscar, poor_house, rock_quarry, sungate,
+wander, wedon, and wizguild.
+Hp:3127/3127 Sp:988/988 Ep:2070/2120 Exp:1384189 >look
+Hagrat's laboratory
+  In the heart of a dimly lit stone chamber, the medieval alchemist's laboratory unfolds like a mystical tableau. Tables
+laden with intricate brass instruments, glass vials, and bubbling concoctions line the room, illuminated by the soft
+glow of flickering candles. A large, ornate furnace stands as the focal point, its flames dancing with an ethereal
+intensity. Ancient tomes filled with esoteric symbols and alchemical recipes are scattered across dusty shelves, while
+the air carries the heady scent of herbs, metallic elements, and the occasional waft of unknown elixirs. The alchemist,
+cloaked in worn robes, moves with a purpose amidst this arcane symphony, seeking the elusive secrets that bridge the
+realms of science and magic.
+ It is pretty dark here.
+Obvious exits are: clubhouse, eldoria, esuth, keyguild, magic_college, nign, nscar, poor_house, rock_quarry, sungate,
+wander, wedon, and wizguild.
+Hp:3127/3127 Sp:988/988 Ep:2070/2120 Exp:1384189 >set width 80
+Variable updated: WIDTH : 80
+Hp:3127/3127 Sp:988/988 Ep:2070/2120 Exp:1384189 >look
+Hagrat's laboratory
+  In the heart of a dimly lit stone chamber, the medieval alchemist's laboratory
+unfolds like a mystical tableau. Tables laden with intricate brass instruments,
+glass vials, and bubbling concoctions line the room, illuminated by the soft
+glow of flickering candles. A large, ornate furnace stands as the focal point,
+its flames dancing with an ethereal intensity. Ancient tomes filled with
+esoteric symbols and alchemical recipes are scattered across dusty shelves,
+while the air carries the heady scent of herbs, metallic elements, and the
+occasional waft of unknown elixirs. The alchemist, cloaked in worn robes, moves
+with a purpose amidst this arcane symphony, seeking the elusive secrets that
+bridge the realms of science and magic.
+ It is pretty dark here.
+Obvious exits are: clubhouse, eldoria, esuth, keyguild, magic_college, nign,
+nscar, poor_house, rock_quarry, sungate, wander, wedon, and wizguild.
+Hp:3127/3127 Sp:988/988 Ep:2070/2120 Exp:1384189 >sungate
+Trader starts using a pair of expensive boots
+Trader starts using a pair of extravagent trousers
+Trader starts using an extravagent doublet
+You are flying.
+Sauronan City - Sun Gate
+  You stand before the Sun Gate of Sauronan, the Celestial City of
+Immortals.  The Crystal Tower looms above the city, its mile high
+spires sparkling with radiance.  To the southwest you see the harbor
+district.
+ The sky is black and the stars shine down brightly. The Scylax moon is waning
+towards half. The Pytheas moon is waning towards half. The Trireme moon is
+waxing towards full. The sky is overcast with dark clouds. It is dark and
+shadowy here.
+Obvious exits are: arena, east, gate, northeast, northwest, south, southeast,
+southwest, tavern, up, west, and zoo.
+A trading post
+A smiling trader
+Hp:3127/3127 Sp:986/988 Ep:2070/2120 Exp:1384189 >
+You sizzle with magical energy.
+You feel fully recovered.
+Hp: 3127/3127  Sp: 988/988  Ep: 2120/2120
+map
+    ``````````````````
+   ````````````````````
+  ``````````````````````
+  ````||||||||||||||||||
+ `````|.................
+ |||||&.................
+ |......................
+ .......................
+........................
+ .......................
+ bbb.......F1........f..
+ ~~Gbbbb...1 1..........
+ ~~~~~~bbb.1*...........
+  ~~~~~~~bb1bb..........
+      ~~~~~~~7bbbbbbbbbb
+           ~~~~~~~~~~~~
+                 ~~~~
+Type 'map legend' to view the legend for this map.
+Hp:3127/3127 Sp:988/988 Ep:2120/2120 Exp:1384189 >arena
+You are flying.
+A path leading to the arena.
+  The arena lies a short distance away from here.  It is fenced off by a well
+patrolled wall leaving just this point as the sole entry to the area.  Rows of
+seats are built up on a hillock alongside the arena that allows spectators to
+watch the matches.  The seats are nearly always filled with cheering fans
+shouting for blood.
+
+Commands:
+-- points          : retrieve the current score of the match.
+-- join <blue|red> : join up for the arena game on blue|red team.
+                     You may not change your allegiance once
+                     signed up.
+-- start           : start the arena war.  Both teams must have members,
+                     but there is no other checking performed so use this
+                     command cautiously.
+-- abort           : clear the teams and reset the arena.  Again, no
+                     checking is performed so be careful.
+-- ranking         : shows the top arena gladiators.
+-- ?               : shows the current status of the arena.
+
+                   +--------------------------+
+                   |Read help player-killing. |
+                   |     (Zero tolerance)     |
+                   +--------------------------+
+
+ The sky is black and the stars shine down brightly. The Scylax moon is waning
+towards half. The Pytheas moon is waning towards half. The Trireme moon is
+waxing towards full. The sky is overcast with dark clouds. It is dark and
+shadowy here.
+The only obvious exit is away.
+Hp:3127/3127 Sp:986/988 Ep:2120/2120 Exp:1384189 >away
+Trader starts using a pair of expensive deck shoes
+Trader starts using a pair of extravagent leggings
+Trader starts using an expensive top
+You are flying.
+Sauronan City - Sun Gate
+  You stand before the Sun Gate of Sauronan, the Celestial City of
+Immortals.  The Crystal Tower looms above the city, its mile high
+spires sparkling with radiance.  To the southwest you see the harbor
+district.
+ The sky is black and the stars shine down brightly. The Scylax moon is waning
+towards half. The Pytheas moon is waning towards half. The Trireme moon is
+waxing towards full. The sky is overcast with dark clouds. It is dark and
+shadowy here.
+Obvious exits are: arena, east, gate, northeast, northwest, south, southeast,
+southwest, tavern, up, west, and zoo.
+A trading post
+A smiling trader
+Hp:3127/3127 Sp:984/988 Ep:2120/2120 Exp:1384189 >zoo
+You are flying.
+Entrance to the zoo
+  This circular path wraps around a pretty pond.  Many rows of cages lead off
+from this central hub.  Famous merchants have captured exotic animals and keep
+them caged here on display.  The collective squawks, roars, and whistles of the
+captive creatures can be heard for quite some distance from the zoo.  A little
+sign is pegged into the green grass around the pond. The sky is black and the
+stars shine down brightly. The Scylax moon is waning towards half. The Pytheas
+moon is waning towards half. The Trireme moon is waxing towards full. The sky is
+overcast with dark clouds. It is dark and shadowy here.
+The only obvious exit is away.
+Hp:3127/3127 Sp:982/988 Ep:2070/2120 Exp:1384189 >peer away
+Hp: 3127/3127  Sp: 982/988  Ep: 2118/2120
+You peer away.
+Sauronan City - Sun Gate
+  You stand before the Sun Gate of Sauronan, the Celestial City of
+Immortals.  The Crystal Tower looms above the city, its mile high
+spires sparkling with radiance.  To the southwest you see the harbor
+district.
+ The sky is black and the stars shine down brightly. The Scylax moon is waning
+towards half. The Pytheas moon is waning towards half. The Trireme moon is
+waxing towards full. The sky is overcast with dark clouds. It is dimly lit here.
+Obvious exits are: arena, east, gate, northeast, northwest, south, southeast,
+southwest, tavern, up, west, and zoo.
+Hp:3127/3127 Sp:982/988 Ep:2118/2120 Exp:1384189 >away
+You are flying.
+Sauronan City - Sun Gate
+  You stand before the Sun Gate of Sauronan, the Celestial City of
+Immortals.  The Crystal Tower looms above the city, its mile high
+spires sparkling with radiance.  To the southwest you see the harbor
+district.
+ The sky is black and the stars shine down brightly. The Scylax moon is waning
+towards half. The Pytheas moon is waning towards half. The Trireme moon is
+waxing towards full. The sky is overcast with dark clouds. It is dark and
+shadowy here.
+Obvious exits are: arena, east, gate, northeast, northwest, south, southeast,
+southwest, tavern, up, west, and zoo.
+A trading post
+A smiling trader

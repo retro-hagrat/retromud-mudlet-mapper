@@ -1,0 +1,4 @@
+-- 70_ui: Geyser container, Geyser.Mapper pane, status label, buttons.
+-- Contract (docs/design.md): geometry persisted via settings; `rmap ui off`
+-- kill-switch; pure consumer of tracker/builder state.
+-- Phase 0: empty; implemented in Phase 5.
