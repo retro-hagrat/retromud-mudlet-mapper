@@ -8,11 +8,13 @@ rm.settings = {
     -- Fallback prompt pattern (Lua pattern), used when the connection
     -- sends no GA and by offline replay. Not end-anchored. See
     -- docs/output-format.md "Prompt patterns".
-    promptPattern = "^Hp:%s*%d+/%d+%s+Sp:%s*%d+/%d+%s+Ep:%s*%d+/%d+",
+    -- Allows an "EQ Tick: " style prefix and a negative Sp.
+    promptPattern = "^[%w ]*:? *Hp:%s*%d+/%d+%s+Sp:%s*%-?%d+/%d+%s+Ep:%s*%d+/%d+",
 
     -- Exits grammar (docs/output-format.md "Exits grammar"). The solo
     -- pattern is lazy so the trailing period is not captured.
     exitsMulti = "^Obvious exits are:%s+(.*)",
+    exitsNone = "^There are no obvious exits%.?%s*$",
     exitsSolo = "^The only obvious exit is%s+(%S-)%.?%s*$",
 
     -- Noise lines skipped when looking for the room title.

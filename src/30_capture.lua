@@ -20,6 +20,7 @@ end
 -- Exits starting at buf[i]: returns exits list, index of last line.
 local function parseExits(buf, i)
     local s = rm.settings
+    if buf[i]:find(s.exitsNone) then return {}, i end
     local solo = buf[i]:match(s.exitsSolo)
     if solo then return { solo:lower() }, i end
     local rest = buf[i]:match(s.exitsMulti)
@@ -45,38 +46,52 @@ local function fingerprint(name, exits)
     return name .. "|" .. table.concat(sorted, ",")
 end
 
--- Walk back from each exits line to the description start (first
--- exactly-two-space-indented line, which may be just the two spaces;
--- deeper indents are list continuations); the title is the non-noise
--- line above it.
+-- A plausible title: not a continuation (lowercase start) and not a
+-- list header ("There are several special commands here:").
+local function titleLike(line)
+    return not line:find("^%l") and not line:find(":%s*$")
+        and not line:find("^[^%w\"'(]")
+end
+
+-- Nearest non-noise, non-indented line above d, or nil.
+local function titleAbove(buf, lo, d)
+    local t = d - 1
+    while t >= lo and (isNoise(buf[t]) or buf[t]:find("^%s")) do t = t - 1 end
+    if t >= lo then return t end
+end
+
+-- Walk back from each exits line to a description start: a line indented
+-- 2 spaces, else 3+ (builders vary: 2, 4, 10; deeper indents inside a
+-- description are boxes and lists, so exactly 2 wins) whose non-noise, non-indented
+-- predecessor looks like a title. A later paragraph's first line has a
+-- sentence fragment above it, so nearer candidates with such a
+-- predecessor are skipped. Description-less rooms (title, then the
+-- single-space light line) fall back to that light line.
+local function findTitle(buf, lo, i)
+    for _, pat in ipairs({ "^  %S", "^  $", "^   +%S", "^   +$", "^ %S" }) do
+        for d = i - 1, lo, -1 do
+            if buf[d]:find(pat) then
+                local t = titleAbove(buf, lo, d)
+                if t and titleLike(buf[t]) then return t end
+            end
+        end
+    end
+end
+
+-- Returns the index after the last exits line handled.
 local function scan(buf)
     local lo, i = 1, 1
     while i <= #buf do
         local exits, last = parseExits(buf, i)
         if exits then
-            local d = i - 1
-            while d >= lo and not (buf[d]:find("^  %S") or buf[d] == "  ") do
-                d = d - 1
-            end
-            if d < lo then
-                -- shortcut: builders may indent the first line 3+ spaces;
-                -- nearest such line wins, so a deeper-indented mid-description
-                -- line can be mistaken for the start. Upgrade if seen.
-                d = i - 1
-                while d >= lo and not buf[d]:find("^   +%S") do d = d - 1 end
-            end
-            local t = d - 1
-            -- an indented line above the 2-space line is the description's
-            -- real first line (e.g. a 4-space "You have arrived..."), not a title
-            while t >= lo and (isNoise(buf[t]) or buf[t]:find("^%s+%S")) do
-                t = t - 1
-            end
-            if d >= lo and t >= lo then
+            local t = findTitle(buf, lo, i)
+            if t then
                 local lines = {}
                 for k = t, last do lines[#lines + 1] = buf[k] end
+                local name = buf[t]:match("^(.-)%s*$")
                 raiseEvent("rm.onRoom", {
-                    name = buf[t], exits = exits, lines = lines,
-                    fingerprint = fingerprint(buf[t], exits),
+                    name = name, exits = exits, lines = lines,
+                    fingerprint = fingerprint(name, exits),
                 })
             end
             lo, i = last + 1, last + 1
@@ -84,14 +99,22 @@ local function scan(buf)
             i = i + 1
         end
     end
+    return lo
 end
 
 -- Raises rm.onRoom per room, then rm.onSegment(n) with the count of
 -- non-noise lines, so the tracker can close commands that print no room.
-local function flush()
+-- keepTail: on a forced flush keep the unscanned tail so a room whose
+-- title is already buffered is not split from its exits line.
+local function flush(keepTail)
     local buf = rm.cap.buf
     rm.cap.buf = {}
-    scan(buf)
+    local lo = scan(buf)
+    if keepTail then
+        for k = math.max(lo, #buf - 40), #buf do
+            rm.cap.buf[#rm.cap.buf + 1] = buf[k]
+        end
+    end
     local n = 0
     for i = 1, #buf do
         if not isNoise(buf[i]) then n = n + 1 end
@@ -106,6 +129,8 @@ function rm.onLine(line)
         flush()
         return
     end
+    -- a reconnect banner (login art) is never part of a room
+    if line:find("^%% Connected to") then c.buf = {} end
     for i = 1, #rm.settings.moveFail do
         if line:find(rm.settings.moveFail[i]) then
             raiseEvent("rm.onMoveFail")
@@ -120,7 +145,7 @@ function rm.onLine(line)
                 .. "pattern never matched in " .. #c.buf .. " lines); "
                 .. "set rm.settings.promptPattern", "err")
         end
-        flush()
+        flush(true)
     end
 end
 

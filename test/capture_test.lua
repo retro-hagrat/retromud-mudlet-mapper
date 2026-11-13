@@ -82,4 +82,24 @@ assert(#rooms == 1 and rooms[1].name == "Jade Street", "4-space desc")
 feed({ "North Path", "    You arrived.", "  More text.", " The sun shines.",
     "Obvious exits are: north.", "Hp: 1/1  Sp: 1/1  Ep: 1/1" })
 assert(#rooms == 1 and rooms[1].name == "North Path", "4+2 desc")
+-- multi-paragraph description: a fragment above the 2nd paragraph is not a title
+feed({ "You are flying.", "A dense fog", "  You float in mist.",
+    "you are not alone here.", "  This is the realm.", " It is dark.",
+    "Obvious exits are: east, and west.", "Hp: 1/1  Sp: 1/1  Ep: 1/1" })
+assert(#rooms == 1 and rooms[1].name == "A dense fog", "2nd paragraph")
+-- 10-space first line, 8-space second paragraph, trailing-space title
+feed({ "Light Room ", "          First line.", "into every corner.  ",
+    "        Second para.", " It is lit.", "Obvious exits are: up.",
+    "Hp: 1/1  Sp: 1/1  Ep: 1/1" })
+assert(#rooms == 1 and rooms[1].name == "Light Room", "10-space")
+-- description-less room (title, light sentence, exits) and no-exits room
+feed({ "Over the Rift", " The sky is black.", "Obvious exits are: up.",
+    "Hp: 1/1  Sp: 1/1  Ep: 1/1" })
+assert(#rooms == 1 and rooms[1].name == "Over the Rift", "no desc")
+feed({ "An endless descent", "  Falling.", " It is dim.",
+    "There are no obvious exits.", "Hp: 1/1  Sp: 1/1  Ep: 1/1" })
+assert(#rooms == 1 and #rooms[1].exits == 0, "no exits")
+-- prefixed prompt and negative Sp end a block
+feed({ "Title", "  d", "Obvious exits are: up.", "EQ Tick: Hp: 1/1  Sp: -5/9  Ep: 1/1" })
+assert(#rooms == 1, "EQ Tick prompt")
 print("capture_test ok")

@@ -43,6 +43,18 @@ prompt** (blank lines and other-player chatter never terminate it):
    the exits line — the exits line does **not** end the block.
 7. **Prompt** (GA-terminated; format is player-configurable — see Prompt patterns).
 
+### Description start and title (corpus of 13 logs)
+
+The description's first line is indented 2 spaces in most rooms, but
+builders also use 4, 10, or a whitespace-only line; later paragraphs can
+start with 2 spaces too, and boxes/lists inside a description are indented
+deeper. Rule (`findTitle`): candidates are exactly-2-space lines first,
+then 3+ spaces, then (description-less rooms) the single-space light line.
+Walking up from the exits line, the first candidate whose non-indented,
+non-noise predecessor is title-like wins. Title-like = not lowercase-first,
+not ending in `:`, not starting with a symbol. Titles are right-trimmed.
+A `% Connected to` line clears the buffer (login art).
+
 ### Anchoring (finding the title)
 
 Because combat produces many lines with no prompt between them, a block's
@@ -126,8 +138,10 @@ the three shapes above, not end-anchored; a player with another template sets
 their own with `rmap prompt`):
 
 ```lua
-"^Hp:%s*%d+/%d+%s+Sp:%s*%d+/%d+%s+Ep:%s*%d+/%d+"
+"^[%w ]*:? *Hp:%s*%d+/%d+%s+Sp:%s*%-?%d+/%d+%s+Ep:%s*%d+/%d+"
 ```
+
+The optional prefix covers `EQ Tick: Hp: ...`; Sp can go negative.
 
 Combat round lines use uppercase `--- HP:` and never match it.
 
@@ -151,7 +165,9 @@ none may be used as a block boundary.
 
 ## Exits grammar (the anchor)
 
-Exactly two forms seen:
+Three forms seen (the third has no names):
+
+- None: `There are no obvious exits.` — empty exit list (`An endless descent`).
 
 - Multi: `Obvious exits are: a, b, and c.` — wraps across lines, comma
   separated, final `and`, always ends with a period.
