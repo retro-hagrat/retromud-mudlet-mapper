@@ -19,7 +19,7 @@ if rm and rm.stop then rm.stop() end
 rm = {}
 rm.restart = wasStarted
 rm.name = "retromud"
-rm.version = "0.0.1"
+rm.version = "0.0.3"
 rm.inits = {}
 rm.started = false
 rm.mapping = false
