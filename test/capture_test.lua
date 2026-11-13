@@ -73,4 +73,13 @@ feed({ "Path leading", "  ", "Along the path there are shrubs.",
     " The sun shines.", "Obvious exits are: north, and south.", "a nurse",
     "Hp: 1/1  Sp: 1/1  Ep: 1/1" })
 assert(#rooms == 1 and rooms[1].name == "Path leading", "blank desc line")
+-- first description line indented 4 spaces, no 2-space line at all
+feed({ "You are flying.", "Jade Street", "    You arrived at the north end.",
+    "This area is plain.", " The sun shines.",
+    "Obvious exits are: north, and south.", "Hp: 1/1  Sp: 1/1  Ep: 1/1" })
+assert(#rooms == 1 and rooms[1].name == "Jade Street", "4-space desc")
+-- 4-space line above the 2-space line is description, not the title
+feed({ "North Path", "    You arrived.", "  More text.", " The sun shines.",
+    "Obvious exits are: north.", "Hp: 1/1  Sp: 1/1  Ep: 1/1" })
+assert(#rooms == 1 and rooms[1].name == "North Path", "4+2 desc")
 print("capture_test ok")

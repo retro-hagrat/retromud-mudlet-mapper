@@ -209,8 +209,19 @@ local function scan(buf)
             while d >= lo and not (buf[d]:find("^  %S") or buf[d] == "  ") do
                 d = d - 1
             end
+            if d < lo then
+                -- shortcut: builders may indent the first line 3+ spaces;
+                -- nearest such line wins, so a deeper-indented mid-description
+                -- line can be mistaken for the start. Upgrade if seen.
+                d = i - 1
+                while d >= lo and not buf[d]:find("^   +%S") do d = d - 1 end
+            end
             local t = d - 1
-            while t >= lo and isNoise(buf[t]) do t = t - 1 end
+            -- an indented line above the 2-space line is the description's
+            -- real first line (e.g. a 4-space "You have arrived..."), not a title
+            while t >= lo and (isNoise(buf[t]) or buf[t]:find("^%s+%S")) do
+                t = t - 1
+            end
             if d >= lo and t >= lo then
                 local lines = {}
                 for k = t, last do lines[#lines + 1] = buf[k] end
