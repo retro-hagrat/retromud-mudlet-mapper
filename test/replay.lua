@@ -1,7 +1,7 @@
 -- usage: lua replay.lua <body.lua> <capture> [<capture>.expect]
--- Feeds the capture line by line to rm.onLine. Block ends come from the
+-- Feeds the capture line by line to rmap.onLine. Block ends come from the
 -- settings prompt pattern (captures contain no GA bytes), surfaced to the
--- module through isPrompt(). Prints ROOM|title|exits per rm.onRoom event.
+-- module through isPrompt(). Prints ROOM|title|exits per rmap.onRoom event.
 -- With an .expect file, each SEND|cmd in it is raised as
 -- sysDataSendRequest where the capture shows the command: after the
 -- prompt line for a prompt echo (`... >cmd`), before the line for a
@@ -26,26 +26,26 @@ local function run(body, capture, expect)
         nextSend = nextSend + 1
         S.raiseEvent("sysDataSendRequest", cmd)
     end
-    registerAnonymousEventHandler("rm.onRoom", function(_, room)
+    registerAnonymousEventHandler("rmap.onRoom", function(_, room)
         print("ROOM|" .. room.name .. "|" .. table.concat(room.exits, ","))
         -- The first block in a capture has no command before it: that is
         -- the explicit `rmap where` orphan creation.
-        if S.roomCount() == 0 and not rm.track.pos then
-            rm.track.adopt(room)
+        if S.roomCount() == 0 and not rmap.track.pos then
+            rmap.track.adopt(room)
         end
     end)
     for raw in io.lines(capture) do
         local line = raw:gsub("\r$", "")
-        S.prompt = line:find(rm.settings.promptPattern) ~= nil
+        S.prompt = line:find(rmap.settings.promptPattern) ~= nil
         if not S.prompt and line == sends[nextSend] then send(line) end
-        rm.onLine(line)
+        rmap.onLine(line)
         local echo = S.prompt and line:match(">%s*(%S.-)%s*$")
         if echo then send(echo) end
     end
     -- A capture can end mid-block with no prompt line; close it as the
     -- next prompt would.
     S.prompt = true
-    rm.onLine("")
+    rmap.onLine("")
     assert(nextSend == #sends + 1, "unsent SEND lines from " .. (expect or ""))
     return S
 end

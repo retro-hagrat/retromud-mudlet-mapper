@@ -10,14 +10,14 @@ Create `config.lua`, `build.py`, `src/` stub modules with header contracts,
 
 **Done when**: `python3 build.py` produces `dist/retromud.mpackage`; installing
 it in Mudlet loads without errors and `rmap help` responds; `git grep` shows no
-global assignments outside the `rm` namespace.
+global assignments outside the `rmap` namespace.
 
 ## Phase 1 — capture engine
 
 Implement the block grammar from [output-format.md](output-format.md) in
 `30_capture.lua`: line buffer, prompt anchoring (GA/EOR preferred,
 settings-held default pattern as fallback; the `rmap prompt` command itself is
-Phase 6), exits parsing, fingerprint computation, `rm.onRoom` event.
+Phase 6), exits parsing, fingerprint computation, `rmap.onRoom` event.
 
 **Done when**: `run_tests.py` replays all three captures
 (`2026-11-01_hagrat_lab_sauronan.log`, `2026-11-13_walk_with_combat.md`,

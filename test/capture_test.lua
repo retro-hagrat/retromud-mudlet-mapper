@@ -5,13 +5,13 @@ S.install()
 S.load(arg[1])
 S.fire("sysLoadEvent")
 local rooms
-registerAnonymousEventHandler("rm.onRoom", function(_, r)
+registerAnonymousEventHandler("rmap.onRoom", function(_, r)
     rooms[#rooms + 1] = r
 end)
 -- Feed lines with isPrompt() false: only the settings pattern ends a segment.
 local function feed(lines)
     rooms = {}
-    for _, l in ipairs(lines) do rm.onLine(l) end
+    for _, l in ipairs(lines) do rmap.onLine(l) end
 end
 local ROOM = { "Orange Tsoda Pool", "  An orange pool.", "smell of oranges.",
     " It is dark and shadowy here.",
@@ -27,13 +27,13 @@ for _, p in ipairs({
     for i, l in ipairs(ROOM) do t[i] = l end
     feed(t)
     assert(#rooms == 0, "room emitted before prompt")
-    rm.onLine(p)
+    rmap.onLine(p)
     assert(#rooms == 1 and rooms[1].name == "Orange Tsoda Pool", p)
 end
 -- combat round line (uppercase) is not a prompt
 feed({ "--- HP:296/296  SP:102/102  EP:74/74" })
-assert(#rm.cap.buf == 1)
-rm.onLine("Hp: 1/1  Sp: 1/1  Ep: 1/1")
+assert(#rmap.cap.buf == 1)
+rmap.onLine("Hp: 1/1  Sp: 1/1  Ep: 1/1")
 
 -- 2. combat lines before and inside the block do not hide the title
 feed({ " *** NEW ROUND ***", "--- HP:296/296  SP:102/102  EP:74/74",
@@ -54,7 +54,7 @@ assert(#rooms == 0, "target look made a room")
 -- 4. no prompt at all: reported once, block still closes
 S.out = {}
 local many = { "Some Room", "  desc", "Obvious exits are: north.", "x" }
-for i = 1, rm.settings.maxBlockLines + 10 do many[#many + 1] = "line" end
+for i = 1, rmap.settings.maxBlockLines + 10 do many[#many + 1] = "line" end
 feed(many)
 assert(#rooms == 1 and rooms[1].name == "Some Room", "flush on overflow")
 local out = table.concat(S.out)

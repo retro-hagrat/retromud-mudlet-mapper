@@ -2,28 +2,28 @@
 -- Contract (docs/design.md, docs/mapper-protocol.md): sysDataSendRequest
 -- pushes one classified expectation (VERIFY / PREVIEW / ADVANCE /
 -- MAYBE_MOVE) per sent command; sync state is SYNCED / UNSYNCED /
--- PENDING; each rm.onRoom block resolves the queue head. Decides
--- advance/verify/preview. Never writes the graph (rm.build does).
+-- PENDING; each rmap.onRoom block resolves the queue head. Decides
+-- advance/verify/preview. Never writes the graph (rmap.build does).
 -- Rules 3 and 4 of the protocol hold by construction: T.send below is
 -- the only function that pushes onto the queue; no module calls
 -- sendSocket or pushes directly.
 
-rm.track = { q = {}, pos = nil, handled = false, following = false }
-local T = rm.track
+rmap.track = { q = {}, pos = nil, handled = false, following = false }
+local T = rmap.track
 
 -- name or abbreviation -> full direction name
 local dirAlias = {}
-for name, d in pairs(rm.settings.dirs) do
+for name, d in pairs(rmap.settings.dirs) do
     dirAlias[name] = name
     dirAlias[d.abbr] = name
 end
 
-function rm.now() return os.time() end
+function rmap.now() return os.time() end
 
 local function classify(cmd)
     local word = cmd:match("^(%S+)")
-    if rm.settings.verifyVerbs[word] then return "VERIFY" end
-    if rm.settings.previewVerbs[word] then return "PREVIEW" end
+    if rmap.settings.verifyVerbs[word] then return "VERIFY" end
+    if rmap.settings.previewVerbs[word] then return "PREVIEW" end
     if dirAlias[cmd] then return "ADVANCE", dirAlias[cmd] end
     return "MAYBE_MOVE"
 end
@@ -36,7 +36,7 @@ local function done(e, b, why)
 end
 
 local function expire()
-    local cutoff = rm.now() - rm.settings.expectTimeout
+    local cutoff = rmap.now() - rmap.settings.expectTimeout
     local dead = {}
     while T.q[1] and T.q[1].t < cutoff do
         dead[#dead + 1] = table.remove(T.q, 1)
@@ -59,7 +59,7 @@ function T.send(_, cmd)
             expire()
             local kind, dir = classify(part)
             T.q[#T.q + 1] = { kind = kind, cmd = part, dir = dir,
-                t = rm.now(), cb = T.hook }
+                t = rmap.now(), cb = T.hook }
             T.hook = nil
             -- unverified: `follow` syntax; "follow self"/"unfollow" end it
             local verb, arg = part:match("^(%S+)%s*(%S*)")
@@ -80,9 +80,9 @@ function T.exec(cmd, cb)
     send(cmd)
     T.hook = nil
     -- a silent game must not stall a job: expire() runs from this timer
-    if rm.ids.timer then killTimer(rm.ids.timer) end
+    if rmap.ids.timer then killTimer(rmap.ids.timer) end
     -- unverified: tempTimer(seconds, fn) returns a timer id for killTimer
-    rm.ids.timer = tempTimer(rm.settings.expectTimeout + 1, expire)
+    rmap.ids.timer = tempTimer(rmap.settings.expectTimeout + 1, expire)
 end
 
 local function resolve(e, b)
@@ -90,15 +90,15 @@ local function resolve(e, b)
     local cur = T.pos
     if not cur then
         -- never guess: only a unique fingerprint match re-syncs
-        T.pos = rm.build.find(b.fingerprint)
+        T.pos = rmap.build.find(b.fingerprint)
     elseif e.kind == "ADVANCE" then
-        T.pos = rm.build.advance(cur, e.dir, b)
-    elseif rm.build.fp(cur) == b.fingerprint then    -- VERIFY / no move
+        T.pos = rmap.build.advance(cur, e.dir, b)
+    elseif rmap.build.fp(cur) == b.fingerprint then    -- VERIFY / no move
         return
     elseif e.kind == "VERIFY" then
-        T.pos = rm.build.find(b.fingerprint)
+        T.pos = rmap.build.find(b.fingerprint)
     else
-        T.pos = rm.build.special(cur, e.cmd, b)
+        T.pos = rmap.build.special(cur, e.cmd, b)
     end
 end
 
@@ -141,11 +141,11 @@ function T.onSegment(_, n)
 end
 
 -- Explicit orphan creation / re-sync entry point (used by `rmap where`).
-function T.adopt(b) T.pos = rm.build.adopt(b) T.focus() end
+function T.adopt(b) T.pos = rmap.build.adopt(b) T.focus() end
 
-rm.inits[#rm.inits + 1] = function()
-    rm.on("sysDataSendRequest", T.send)
-    rm.on("rm.onRoom", T.onRoom)
-    rm.on("rm.onMoveFail", T.onMoveFail)
-    rm.on("rm.onSegment", T.onSegment)
+rmap.inits[#rmap.inits + 1] = function()
+    rmap.on("sysDataSendRequest", T.send)
+    rmap.on("rmap.onRoom", T.onRoom)
+    rmap.on("rmap.onMoveFail", T.onMoveFail)
+    rmap.on("rmap.onSegment", T.onSegment)
 end

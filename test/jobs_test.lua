@@ -20,13 +20,13 @@ local function exitsOf(key)
     return ex
 end
 local function show(key)
-    rm.onLine(world[key].name)
-    rm.onLine("  A place.")
-    rm.onLine(exitsLine(exitsOf(key)))
-    rm.onLine(PROMPT)
+    rmap.onLine(world[key].name)
+    rmap.onLine("  A place.")
+    rmap.onLine(exitsLine(exitsOf(key)))
+    rmap.onLine(PROMPT)
 end
 local function full(c)
-    for name, d in pairs(rm.settings.dirs) do
+    for name, d in pairs(rmap.settings.dirs) do
         if c == d.abbr then return name end
     end
     return c
@@ -38,7 +38,7 @@ local function respond(cmd)
         show(cur)
     elseif what then
         if world[cur].nb[what] then show(world[cur].nb[what])
-        else rm.onLine("You peer nowhere.") rm.onLine(PROMPT) end
+        else rmap.onLine("You peer nowhere.") rmap.onLine(PROMPT) end
     elseif world.silent then
         return
     else
@@ -47,8 +47,8 @@ local function respond(cmd)
             cur = to
             show(cur)
         else
-            rm.onLine("You can't go that way!")
-            rm.onLine(PROMPT)
+            rmap.onLine("You can't go that way!")
+            rmap.onLine(PROMPT)
         end
     end
 end
@@ -68,11 +68,11 @@ end
 local function walk(cmd) send(cmd) pump() end
 local function adopt()           -- first block: explicit orphan creation
     local got
-    local id = registerAnonymousEventHandler("rm.onRoom",
+    local id = registerAnonymousEventHandler("rmap.onRoom",
         function(_, r) got = r end)
     show(cur)
     killAnonymousEventHandler(id)
-    rm.track.adopt(got)
+    rmap.track.adopt(got)
 end
 local function run(line) assert(S.alias(line), line) pump() end
 local function said() return table.concat(S.out) end
@@ -124,7 +124,7 @@ assert(ner.x == sgr.x + 1 and ner.y == sgr.y + 1 and ner.stubs.southwest)
 local gate = one("Room gate")
 assert(sgr.special.gate == gate and sgr.special.zoo == (one("Room zoo")))
 assert(S.map.rooms[gate].exits.leave == nil, "freeform has no back-link")
-assert(rm.job == nil and said():find("scan: done, 12 new", 1, true), said())
+assert(rmap.job == nil and said():find("scan: done, 12 new", 1, true), said())
 local before = snap(S.map.rooms)
 local nsent = #S.sent
 run("rmap scan")
@@ -133,11 +133,11 @@ assert(said():find("scan: done, 0 new", 1, true))
 assert(#S.sent > nsent and S.sent[#S.sent] == "peer zoo")
 -- walking into a stub confirms it and hardens the back link
 walk("e")
-assert(S.map.rooms[ex].ud.source == "walk" and rm.track.pos == ex, tostring(S.map.rooms[ex].ud.source) .. tostring(rm.track.pos) .. "/" .. ex .. said())
+assert(S.map.rooms[ex].ud.source == "walk" and rmap.track.pos == ex, tostring(S.map.rooms[ex].ud.source) .. tostring(rmap.track.pos) .. "/" .. ex .. said())
 assert(S.map.rooms[ex].exits.west == nil, "soft until walked")
 walk("w")
 assert(S.map.rooms[ex].exits.west == sg and S.roomCount() == 13)
-assert(rm.track.pos == sg and not S.map.rooms[ex].stubs.west)
+assert(rmap.track.pos == sg and not S.map.rooms[ex].stubs.west)
 
 -- scan over the real Sun Gate peer data (zoo -> away)
 local lines, grab = {}, false
@@ -157,8 +157,8 @@ adopt()
 local real = respond
 respond = function(cmd)
     if cmd == "peer away" then
-        for _, l in ipairs(lines) do rm.onLine(l) end
-        rm.onLine(PROMPT)
+        for _, l in ipairs(lines) do rmap.onLine(l) end
+        rmap.onLine(PROMPT)
     else real(cmd) end
 end
 run("rmap scan")
@@ -167,7 +167,7 @@ local z, zr = one("Entrance to the zoo")
 assert(zr.special.away == sg2 and s2.ud.source == "peer")
 assert(s2.ud.fp == "Sauronan City - Sun Gate|" .. table.concat(sunExits, ","))
 assert(s2.stubs.east and s2.stubs.southwest and s2.stubs.up, "stubs")
-assert(S.roomCount() == 2 and rm.track.pos == z)
+assert(S.roomCount() == 2 and rmap.track.pos == z)
 respond = real
 
 -- ===== where =====
@@ -175,9 +175,9 @@ respond = real
 local line = { a = room("A", { east = "b" }), b = room("B", { east = "c", west = "a" }),
     c = room("C", { west = "b" }) }
 fresh(line, "a"); adopt(); walk("e"); walk("e")
-rm.track.pos = nil
+rmap.track.pos = nil
 run("rmap where")
-assert(rm.track.pos == (one("C")) and S.roomCount() == 3 and rm.job == nil)
+assert(rmap.track.pos == (one("C")) and S.roomCount() == 3 and rmap.job == nil)
 -- ambiguous fingerprints, resolved by peering
 local pipe = {
     s = room("S", { east = "p1" }),
@@ -189,21 +189,21 @@ fresh(pipe, "s"); adopt(); walk("e"); walk("e"); walk("e"); walk("e")
 assert(S.roomCount() == 5, "pipe rooms " .. S.roomCount())
 local pipes = byName("Pipe")
 assert(#pipes == 2)
-rm.track.pos = nil
+rmap.track.pos = nil
 cur = "p2"
 run("rmap where")
 local p2id
 for _, id in ipairs(pipes) do
     if S.map.rooms[id].x == 3 then p2id = id end
 end
-assert(rm.track.pos == p2id, "disambiguated")
+assert(rmap.track.pos == p2id, "disambiguated")
 -- no match: honest report, nothing created; mapping on adopts
 fresh({ n = room("Nowhere", { north = "n" }) }, "n")
 run("rmap where")
-assert(S.roomCount() == 0 and rm.track.pos == nil and rm.job == nil)
+assert(S.roomCount() == 0 and rmap.track.pos == nil and rmap.job == nil)
 assert(said():find("no match", 1, true))
 run("rmap start"); run("rmap where")
-assert(S.roomCount() == 1 and rm.track.state() == "SYNCED")
+assert(S.roomCount() == 1 and rmap.track.state() == "SYNCED")
 
 -- ===== undo =====
 local gw = { a = room("A", { east = "b" }), b = room("B", { east = "c", west = "a" }),
@@ -213,7 +213,7 @@ assert(S.roomCount() == 4)
 local c = one("C")
 run("rmap undo")                                  -- Hill + gate
 assert(S.roomCount() == 3 and #byName("Hill") == 0)
-assert(S.map.rooms[c].special.gate == nil and rm.track.pos == nil)
+assert(S.map.rooms[c].special.gate == nil and rmap.track.pos == nil)
 run("rmap undo")                                  -- C + B's east link
 local b, br = one("B")
 assert(S.roomCount() == 2 and #byName("C") == 0)
@@ -242,7 +242,7 @@ local function corridor()
     fresh(long, "r1"); adopt()
     for _ = 1, 4 do walk("e") end
     for _ = 1, 4 do walk("w") end
-    assert(rm.track.pos == (one("Hall 1")) and #S.sent == 8)
+    assert(rmap.track.pos == (one("Hall 1")) and #S.sent == 8)
 end
 local function ids(n) -- room ids of Hall 2..n+1 as strings, like Mudlet
     local out = {}
@@ -251,10 +251,10 @@ local function ids(n) -- room ids of Hall 2..n+1 as strings, like Mudlet
 end
 corridor()
 speedWalkDir, speedWalkPath = { "e", "e", "e", "e" }, ids(4)
-assert(doSpeedWalk == rm.speedwalk, "doSpeedWalk not installed")
+assert(doSpeedWalk == rmap.speedwalk, "doSpeedWalk not installed")
 doSpeedWalk(); pump()
-assert(rm.track.pos == (one("Hall 5")) and rm.job == nil, "walked")
-assert(#S.sent == 12 and S.roomCount() == 5 and #rm.track.q == 0)
+assert(rmap.track.pos == (one("Hall 5")) and rmap.job == nil, "walked")
+assert(#S.sent == 12 and S.roomCount() == 5 and #rmap.track.q == 0)
 assert(said():find("arrived", 1, true))
 -- injected move-fail at step 3: halts, position intact
 corridor()
@@ -262,7 +262,7 @@ speedWalkDir, speedWalkPath = { "e", "e", "e", "e" }, ids(4)
 world.block = "e"
 local mark = #S.sent
 doSpeedWalk(); pump()                      -- step 1 is blocked outright
-assert(rm.track.pos == (one("Hall 1")) and #S.sent == mark + 1 and rm.job == nil)
+assert(rmap.track.pos == (one("Hall 1")) and #S.sent == mark + 1 and rmap.job == nil)
 world.block = nil
 corridor()
 speedWalkDir, speedWalkPath = { "e", "e", "e", "e" }, ids(4)
@@ -277,8 +277,8 @@ respond = function(cmd)
 end
 doSpeedWalk(); pump()
 assert(steps == 3, "steps " .. steps)
-assert(rm.track.pos == (one("Hall 3")) and rm.job == nil, "position intact")
-assert(#rm.track.q == 0 and said():find("stopped at step 3", 1, true), said())
+assert(rmap.track.pos == (one("Hall 3")) and rmap.job == nil, "position intact")
+assert(#rmap.track.q == 0 and said():find("stopped at step 3", 1, true), said())
 respond = realRespond
 -- no speedWalkPath at all: a blocked step still aborts
 corridor()
@@ -286,7 +286,7 @@ speedWalkDir, speedWalkPath = { "e", "e" }, nil
 world.block = "e"
 mark = #S.sent
 doSpeedWalk(); pump()
-assert(#S.sent == mark + 1 and rm.job == nil, "pathless walk continued")
+assert(#S.sent == mark + 1 and rmap.job == nil, "pathless walk continued")
 world.block = nil
 -- wrong room reached (path says otherwise): abort
 corridor()
@@ -296,14 +296,14 @@ assert(said():find("stopped at step 2", 1, true), "mismatch should stop at step 
 -- silent game: the timer expires the step and aborts
 corridor()
 local now = 1000
-rm.now = function() return now end
+rmap.now = function() return now end
 world.silent = true
 speedWalkDir, speedWalkPath = { "e" }, ids(1)
 doSpeedWalk(); pump()
-assert(rm.job == "speedwalk" and #S.timers == 1)
-now = now + rm.settings.expectTimeout + 1
+assert(rmap.job == "speedwalk" and #S.timers == 1)
+now = now + rmap.settings.expectTimeout + 1
 S.timers[1].fn()
-assert(rm.job == nil and said():find("timeout", 1, true))
+assert(rmap.job == nil and said():find("timeout", 1, true))
 
 -- ===== follow / busy refusals =====
 corridor()
@@ -311,12 +311,12 @@ send("follow bob"); pump()
 speedWalkDir, speedWalkPath = { "e" }, ids(1)
 local n = #S.sent
 doSpeedWalk(); run("rmap scan")
-assert(#S.sent == n and rm.job == nil and said():find("following", 1, true))
+assert(#S.sent == n and rmap.job == nil and said():find("following", 1, true))
 send("follow self"); pump()
-assert(rm.track.following == false)
-rm.job = "scan"; doSpeedWalk()
+assert(rmap.track.following == false)
+rmap.job = "scan"; doSpeedWalk()
 assert(said():find("busy", 1, true))
-rm.job = nil
+rmap.job = nil
 -- uninstall removes the global and the timer
 S.fire("sysUninstallPackage", "retromud")
 assert(doSpeedWalk == nil and #S.timers == 0)

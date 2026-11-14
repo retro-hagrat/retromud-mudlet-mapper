@@ -54,9 +54,9 @@ def main():
 
     problems = lint(body) + lua_check(body_path)
     cfg = os.path.join(ROOT, "config.lua")
-    m = re.search(r'rm\.version\s*=\s*"([^"]+)"', body)
+    m = re.search(r'rmap\.version\s*=\s*"([^"]+)"', body)
     if not m or m.group(1) != lua_value(cfg, "version"):
-        problems.append("rm.version does not match config.lua version")
+        problems.append("rmap.version does not match config.lua version")
     if problems:
         print("build FAILED:\n  " + "\n  ".join(problems))
         sys.exit(1)

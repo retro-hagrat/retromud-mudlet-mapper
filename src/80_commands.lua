@@ -1,14 +1,14 @@
--- 80_commands: all aliases (`rm <command>`).
+-- 80_commands: all aliases (`rmap <command>`).
 -- Contract (docs/design.md): rmap start/stop/goto/path/where/scan/undo/fix/
 -- save/load/prompt(Phase 6)/exits/fail/debug/ui/reload/help. Pure
 -- consumer of the other modules.
--- Phase 3: where, scan, undo (start/stop only toggle rm.mapping, which
+-- Phase 3: where, scan, undo (start/stop only toggle rmap.mapping, which
 -- lets `rmap where` create an orphan room when nothing matches).
 
-rm.commands = {}
+rmap.commands = {}
 
-function rm.commands.help()
-    rm.out("retromud " .. rm.version .. " - RetroMUD auto-mapper")
+function rmap.commands.help()
+    rmap.out("retromud " .. rmap.version .. " - RetroMUD auto-mapper")
     for _, c in ipairs({
         { "rmap help", "show this text" },
         { "rmap start|stop", "mapping on/off (where may create a room)" },
@@ -16,19 +16,19 @@ function rm.commands.help()
         { "rmap scan", "peer every exit of this room and map the stubs" },
         { "rmap undo", "remove the last auto-created room" },
     }) do
-        rm.out(string.format("  <cyan>%-16s<reset>%s", c[1], c[2]), "markup")
+        rmap.out(string.format("  <cyan>%-16s<reset>%s", c[1], c[2]), "markup")
     end
 end
 
-local T, B = rm.track, rm.build
+local T, B = rmap.track, rmap.build
 
-function rm.commands.start() rm.mapping = true rm.out("mapping on", "ok") end
-function rm.commands.stop() rm.mapping = false rm.out("mapping off", "ok") end
+function rmap.commands.start() rmap.mapping = true rmap.out("mapping on", "ok") end
+function rmap.commands.stop() rmap.mapping = false rmap.out("mapping off", "ok") end
 
 local function finish(msg, cb, ok)
-    rm.job = nil
+    rmap.job = nil
     T.focus()
-    if msg then rm.out(msg, ok and "ok" or "skip") end
+    if msg then rmap.out(msg, ok and "ok" or "skip") end
     if cb then cb(ok) end
 end
 
@@ -69,7 +69,7 @@ local function where(cb)
             return finish("where: synced", cb, true)
         end
         if #c == 0 then
-            if not rm.mapping then
+            if not rmap.mapping then
                 return finish("where: no match in the map", cb, false)
             end
             T.adopt(b)
@@ -85,16 +85,16 @@ local function where(cb)
     end)
 end
 
-function rm.commands.where()
-    if not rm.canRun() then return end
-    rm.job = "where"
+function rmap.commands.where()
+    if not rmap.canRun() then return end
+    rmap.job = "where"
     where()
 end
 
 -- rmap scan: peer every exit that is not already linked to a real room.
-function rm.commands.scan()
-    if not rm.canRun() then return end
-    rm.job = "scan"
+function rmap.commands.scan()
+    if not rmap.canRun() then return end
+    rmap.job = "scan"
     local function scan()
         T.exec("look", function(b)
             local cur = T.pos
@@ -106,7 +106,7 @@ function rm.commands.scan()
             local order = {}
             for _, want in ipairs({ true, false }) do
                 for _, ex in ipairs(b.exits) do
-                    if (rm.settings.dirs[ex] ~= nil) == want then
+                    if (rmap.settings.dirs[ex] ~= nil) == want then
                         order[#order + 1] = ex
                     end
                 end
@@ -125,7 +125,7 @@ function rm.commands.scan()
                 T.exec("peer " .. ex, function(pb)
                     if pb then
                         local n = #B.created
-                        if rm.settings.dirs[ex] then
+                        if rmap.settings.dirs[ex] then
                             B.advance(cur, ex, pb, true)
                         else
                             B.special(cur, ex, pb, true)
@@ -141,34 +141,34 @@ function rm.commands.scan()
     if T.state() ~= "UNSYNCED" then return scan() end
     where(function(ok)
         if not ok then return finish("scan: could not sync", nil) end
-        rm.job = "scan"
+        rmap.job = "scan"
         scan()
     end)
 end
 
-function rm.commands.undo()
+function rmap.commands.undo()
     local e = B.undo()
-    if not e then return rm.out("undo: nothing to undo", "skip") end
+    if not e then return rmap.out("undo: nothing to undo", "skip") end
     if T.pos == e.id then T.pos = nil end
-    rm.out("undo: removed '" .. e.name .. "' (room " .. e.id .. ")", "ok")
+    rmap.out("undo: removed '" .. e.name .. "' (room " .. e.id .. ")", "ok")
 end
 
-function rm.command(arg)
+function rmap.command(arg)
     local cmd = arg:match("^%s*(%S*)")
     if cmd == "" then cmd = "help" end
-    local fn = rm.commands[cmd]
+    local fn = rmap.commands[cmd]
     if fn then
         fn()
     else
-        rm.out("unknown command '" .. cmd .. "'. Try 'rmap help'.", "err")
+        rmap.out("unknown command '" .. cmd .. "'. Try 'rmap help'.", "err")
     end
 end
 
-rm.inits[#rm.inits + 1] = function()
+rmap.inits[#rmap.inits + 1] = function()
     -- unverified: an unmatched optional group leaves matches[2] nil or ""
-    rm.alias("^rmap( .*)?$", function() rm.command(matches[2] or "") end)
+    rmap.alias("^rmap( .*)?$", function() rmap.command(matches[2] or "") end)
 end
 
 -- Last module: a script re-run (save in the editor) does not raise
 -- sysLoadEvent again, so resume if the previous instance was running.
-if rm.restart then rm.restart = nil rm.start() end
+if rmap.restart then rmap.restart = nil rmap.start() end

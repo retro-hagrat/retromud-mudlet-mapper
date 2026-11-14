@@ -18,23 +18,23 @@ assert(select(2, text:gsub("%[rmap%]", "")) == 1, "help repeats the tag")
 -- output format: coloured tag by level, new line only after prompt text
 assert(not S.alias("rm somefile"), "rm alias still swallows rm <file>")
 S.out = {}
-rm.out("hello", "ok")
+rmap.out("hello", "ok")
 assert(table.concat(S.out) == "<green>[rmap]<reset> hello\n", table.concat(S.out))
 S.out = {}
-rm.out("nope", "skip")
+rmap.out("nope", "skip")
 assert(table.concat(S.out):find("^<yellow>%[rmap%]"), "skip colour")
 S.out = {}
-rm.out("bad", "err")
+rmap.out("bad", "err")
 assert(table.concat(S.out):find("^<red>%[rmap%]"), "err colour")
 S.out = {}
-rm.out("  body", "plain")
+rmap.out("  body", "plain")
 assert(table.concat(S.out) == "  body\n", "plain has no tag")
 S.out = {}
-rm.out("a <b>")
+rmap.out("a <b>")
 assert(table.concat(S.out):find("a <<b>", 1, true), "cecho tags escaped")
 S.lastLine = "Hp: 1/1 >"            -- cursor is on the prompt's line
 S.out = {}
-rm.out("x", "ok")
+rmap.out("x", "ok")
 assert(S.out[1] == "\n", "no new line after prompt text")
 S.lastLine = nil
 -- script re-run while started: handlers come back without sysLoadEvent

@@ -6,13 +6,13 @@
 -- (the tracker then goes UNSYNCED; nothing is guessed or created).
 -- Fingerprints persist as room user data "fp".
 
-rm.build = {}
-local B = rm.build
+rmap.build = {}
+local B = rmap.build
 -- Auto-created rooms, newest last: { id, from, dir | cmd } (for undo).
 B.created = {}
 
 local function areaId()
-    local name = rm.settings.areaName
+    local name = rmap.settings.areaName
     -- unverified: getAreaTable() returns {name = id}; addAreaName returns the id
     return getAreaTable()[name] or addAreaName(name)
 end
@@ -46,7 +46,7 @@ function B.find(fp)
 end
 
 local function link(from, to, dir)
-    local n = rm.settings.dirs[dir].num
+    local n = rmap.settings.dirs[dir].num
     -- unverified: setExit takes the direction number 1-12
     setExit(from, to, n)
     -- unverified: setExit leaves a stub in place, so clear it
@@ -77,7 +77,7 @@ local function stub(id, b)
     -- unverified: getRoomExits returns {directionName = roomId}
     local linked = getRoomExits(id)
     for _, ex in ipairs(b.exits) do
-        local d = rm.settings.dirs[ex]
+        local d = rmap.settings.dirs[ex]
         if d and not linked[ex] then setExitStub(id, d.num, true) end
     end
 end
@@ -87,7 +87,7 @@ end
 local function neighbor(from, dir)
     local to = getRoomExits(from)[dir]
     if to then return to, true end
-    local d = rm.settings.dirs[dir]
+    local d = rmap.settings.dirs[dir]
     local x, y, z = getRoomCoordinates(from)
     return roomAt(x + d.dx, y + d.dy, z + d.dz), false
 end
@@ -122,7 +122,7 @@ local function reservedFor(from, dir)
     local out = {}
     local x, y, z = getRoomCoordinates(from)
     for ex in (B.fp(from):match("|(.*)$") or ""):gmatch("[^,]+") do
-        local d = rm.settings.dirs[ex]
+        local d = rmap.settings.dirs[ex]
         if d and ex ~= dir then
             out[(x + d.dx) .. "," .. (y + d.dy) .. "," .. (z + d.dz)] = true
         end
@@ -143,7 +143,7 @@ local function near(from, fp, opp)
         if id ~= from and (not back or back == from)
             and getRoomExits(from)[opp] ~= id
             and math.max(math.abs(a - x), math.abs(b - y),
-                math.abs(c - z)) <= rm.settings.maxSearchDistance then
+                math.abs(c - z)) <= rmap.settings.maxSearchDistance then
             if hit then return nil end               -- ambiguous
             hit = id
         end
@@ -154,7 +154,7 @@ end
 -- peer: a `peer` preview from `from` (rmap scan): new rooms are stubs and
 -- the way back is left as a soft exit stub, never a real link.
 function B.advance(from, dir, b, peer)
-    local d = rm.settings.dirs[dir]
+    local d = rmap.settings.dirs[dir]
     local to, linked = neighbor(from, dir)
     -- An unlinked room on the expected cell is only a coordinate guess;
     -- a different room there means the map does not fit the grid, so
@@ -190,7 +190,7 @@ function B.special(from, cmd, b, peer)
         if not peer then confirm(to) end
     else
         local x, y, z = getRoomCoordinates(from)
-        local dz = rm.settings.freeformDz[cmd]
+        local dz = rmap.settings.freeformDz[cmd]
         if dz then
             x, y, z = freeCell(x, y, z + dz)
         else
@@ -222,7 +222,7 @@ function B.undo()
     local e = table.remove(B.created)
     if not e then return nil end
     if e.dir then
-        local n = rm.settings.dirs[e.dir].num
+        local n = rmap.settings.dirs[e.dir].num
         -- unverified: setExit(from, -1, dir) removes the exit
         setExit(e.from, -1, n)
         setExitStub(e.from, n, true)

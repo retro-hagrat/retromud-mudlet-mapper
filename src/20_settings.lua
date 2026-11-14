@@ -4,7 +4,7 @@
 -- patterns; persisted UI geometry. No behavior. Phase 0 holds defaults
 -- only; persistence arrives with the first setting that needs it.
 
-rm.settings = {
+rmap.settings = {
     -- Fallback prompt pattern (Lua pattern), used when the connection
     -- sends no GA and by offline replay. Not end-anchored. See
     -- docs/output-format.md "Prompt patterns".

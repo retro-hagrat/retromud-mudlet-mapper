@@ -43,7 +43,7 @@ function S.reset()
     S.timers = {}
     S.onSend = nil
     S.map = { rooms = {}, areas = {}, nextArea = 1 }
-    _G.rm = nil
+    _G.rmap = nil
 end
 S.map = { rooms = {}, areas = {}, nextArea = 1 }
 

@@ -1,25 +1,25 @@
--- 30_capture: line buffer -> room-block detection -> rm.onRoom event.
--- Contract (docs/design.md, docs/output-format.md): rm.onLine(line) is
+-- 30_capture: line buffer -> room-block detection -> rmap.onRoom event.
+-- Contract (docs/design.md, docs/output-format.md): rmap.onLine(line) is
 -- called once per received line (a trigger live, the replay harness
 -- offline). Segments end at a prompt: isPrompt() (GA/EOR) live, else
--- rm.settings.promptPattern. Each exits line in a segment raises
--- raiseEvent("rm.onRoom", {name=, exits={...}, lines={...},
--- fingerprint=}), then rm.onSegment(n); a move-fail line raises
--- rm.onMoveFail. Knows nothing about the map.
+-- rmap.settings.promptPattern. Each exits line in a segment raises
+-- raiseEvent("rmap.onRoom", {name=, exits={...}, lines={...},
+-- fingerprint=}), then rmap.onSegment(n); a move-fail line raises
+-- rmap.onMoveFail. Knows nothing about the map.
 
-rm.cap = { buf = {}, warned = false }
+rmap.cap = { buf = {}, warned = false }
 
 local function isNoise(line)
     if line:find("^%s*$") then return true end
-    for i = 1, #rm.settings.ignore do
-        if line:find(rm.settings.ignore[i]) then return true end
+    for i = 1, #rmap.settings.ignore do
+        if line:find(rmap.settings.ignore[i]) then return true end
     end
     return false
 end
 
 -- Exits starting at buf[i]: returns exits list, index of last line.
 local function parseExits(buf, i)
-    local s = rm.settings
+    local s = rmap.settings
     if buf[i]:find(s.exitsNone) then return {}, i end
     local solo = buf[i]:match(s.exitsSolo)
     if solo then return { solo:lower() }, i end
@@ -89,7 +89,7 @@ local function scan(buf)
                 local lines = {}
                 for k = t, last do lines[#lines + 1] = buf[k] end
                 local name = buf[t]:match("^(.-)%s*$")
-                raiseEvent("rm.onRoom", {
+                raiseEvent("rmap.onRoom", {
                     name = name, exits = exits, lines = lines,
                     fingerprint = fingerprint(name, exits),
                 })
@@ -102,56 +102,56 @@ local function scan(buf)
     return lo
 end
 
--- Raises rm.onRoom per room, then rm.onSegment(n) with the count of
+-- Raises rmap.onRoom per room, then rmap.onSegment(n) with the count of
 -- non-noise lines, so the tracker can close commands that print no room.
 -- keepTail: on a forced flush keep the unscanned tail so a room whose
 -- title is already buffered is not split from its exits line.
 local function flush(keepTail)
-    local buf = rm.cap.buf
-    rm.cap.buf = {}
+    local buf = rmap.cap.buf
+    rmap.cap.buf = {}
     local lo = scan(buf)
     if keepTail then
         for k = math.max(lo, #buf - 40), #buf do
-            rm.cap.buf[#rm.cap.buf + 1] = buf[k]
+            rmap.cap.buf[#rmap.cap.buf + 1] = buf[k]
         end
     end
     local n = 0
     for i = 1, #buf do
         if not isNoise(buf[i]) then n = n + 1 end
     end
-    raiseEvent("rm.onSegment", n)
+    raiseEvent("rmap.onSegment", n)
 end
 
-function rm.onLine(line)
-    local c = rm.cap
-    if isPrompt() or line:find(rm.settings.promptPattern) then
+function rmap.onLine(line)
+    local c = rmap.cap
+    if isPrompt() or line:find(rmap.settings.promptPattern) then
         c.warned = false
         flush()
         return
     end
     -- a reconnect banner (login art) is never part of a room
     if line:find("^%% Connected to") then c.buf = {} end
-    for i = 1, #rm.settings.moveFail do
-        if line:find(rm.settings.moveFail[i]) then
-            raiseEvent("rm.onMoveFail")
+    for i = 1, #rmap.settings.moveFail do
+        if line:find(rmap.settings.moveFail[i]) then
+            raiseEvent("rmap.onMoveFail")
             break
         end
     end
     c.buf[#c.buf + 1] = line
-    if #c.buf > rm.settings.maxBlockLines then
+    if #c.buf > rmap.settings.maxBlockLines then
         if not c.warned then
             c.warned = true
-            rm.out("no usable prompt (no GA, and the prompt "
+            rmap.out("no usable prompt (no GA, and the prompt "
                 .. "pattern never matched in " .. #c.buf .. " lines); "
-                .. "set rm.settings.promptPattern", "err")
+                .. "set rmap.settings.promptPattern", "err")
         end
         flush(true)
     end
 end
 
-rm.inits[#rm.inits + 1] = function()
+rmap.inits[#rmap.inits + 1] = function()
     -- unverified: tempRegexTrigger("^", fn) fires for every line, and
     -- the global `line` holds the current line inside fn
-    local id = tempRegexTrigger("^", function() rm.onLine(line) end)
-    rm.ids.trigger[#rm.ids.trigger + 1] = id
+    local id = tempRegexTrigger("^", function() rmap.onLine(line) end)
+    rmap.ids.trigger[#rmap.ids.trigger + 1] = id
 end

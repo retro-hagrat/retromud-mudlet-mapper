@@ -29,7 +29,7 @@ Developed as modular Lua in `src/` (numbered prefixes fix the load order).
 3. zips `retromud.xml` + `config.lua` (mpackage manifest) into
    `dist/retromud.mpackage`,
 4. sanity-checks the body (balanced tables/functions; no globals outside the
-   `rm` namespace; version bumped).
+   `rmap` namespace; version bumped).
 
 Why one self-contained Script element (the same shape as Mudlet's bundled
 generic_mapper): no filesystem path dependencies, survives Mudlet's XML
@@ -38,7 +38,7 @@ this repo, not in the artifact.
 
 ## Runtime architecture
 
-- **One global namespace `rm`.** Nothing leaks into the global Lua environment.
+- **One global namespace `rmap`.** Nothing leaks into the global Lua environment.
 - **No GUI objects in the XML.** On load (`sysLoadEvent` / `sysInstall`) the
   script builds its own `tempRegexTrigger`/`tempAlias` objects from the
   settings table and registers anonymous event handlers. Consequences:
@@ -60,9 +60,9 @@ this repo, not in the artifact.
 
 | Module | Contract |
 |---|---|
-| `10_rm` | namespace table, version, lifecycle: load/install builds triggers+UI, uninstall tears them down; event wiring |
+| `10_rmap` | namespace table, version, lifecycle: load/install builds triggers+UI, uninstall tears them down; event wiring |
 | `20_settings` | defaults + merge/load/save of user overrides; per-character patterns; no behavior |
-| `30_capture` | line buffer → room-block detection (grammar in [output-format.md](output-format.md)); emits internal `rm.onRoom {name, exits, lines, fingerprint}`; knows nothing about the map |
+| `30_capture` | line buffer → room-block detection (grammar in [output-format.md](output-format.md)); emits internal `rmap.onRoom {name, exits, lines, fingerprint}`; knows nothing about the map |
 | `40_tracker` | the expectation queue (`sysDataSendRequest` → classified expectations), sync state (SYNCED / UNSYNCED / PENDING), resolution of blocks against expectations; decides advance/verify/preview — never writes the graph |
 | `50_builder` | the **only** module that writes the map graph: fingerprint matching, coordinate-first dedupe, room/area/exits creation, stub semantics, special exits, merge/undo support |
 | `60_speedwalk` | `doSpeedWalk()` contract (reads `speedWalkDir`/`speedWalkPath`), confirmed-per-step engine (send → wait for resolved block), abort on move-fail |

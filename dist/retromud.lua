@@ -1,22 +1,22 @@
 -- 10_rm: namespace, version, lifecycle, event wiring.
--- Contract (docs/design.md): one global namespace `rm`, nothing else leaks.
--- Load/install (sysLoadEvent, sysInstall) runs rm.start(), which runs the
--- init functions other modules appended to rm.inits (they build their
--- temp triggers/aliases/UI). sysUninstallPackage runs rm.stop(), which
+-- Contract (docs/design.md): one global namespace `rmap`, nothing else leaks.
+-- Load/install (sysLoadEvent, sysInstall) runs rmap.start(), which runs the
+-- init functions other modules appended to rmap.inits (they build their
+-- temp triggers/aliases/UI). sysUninstallPackage runs rmap.stop(), which
 -- kills every registered handler/trigger/alias id. Every id a module
--- creates must be tracked here via rm.on / rm.alias so teardown is total.
+-- creates must be tracked here via rmap.on / rmap.alias so teardown is total.
 
 -- Re-running the script (Mudlet re-executes it on save): tear down first.
-local wasStarted = rm and rm.started
-if rm and rm.stop then rm.stop() end
-rm = {}
-rm.restart = wasStarted
-rm.name = "retromud"
-rm.version = "0.0.3"
-rm.inits = {}
-rm.started = false
-rm.mapping = false
-rm.ids = { handler = {}, trigger = {}, alias = {} }
+local wasStarted = rmap and rmap.started
+if rmap and rmap.stop then rmap.stop() end
+rmap = {}
+rmap.restart = wasStarted
+rmap.name = "retromud"
+rmap.version = "0.0.4"
+rmap.inits = {}
+rmap.started = false
+rmap.mapping = false
+rmap.ids = { handler = {}, trigger = {}, alias = {} }
 
 -- One tagged line per message: "[rmap] text". level colours the tag:
 -- "ok" green, "skip" yellow, "err" red, nil cyan, "plain" no tag, and
@@ -25,7 +25,7 @@ rm.ids = { handler = {}, trigger = {}, alias = {} }
 -- when the last line already has text.
 -- getLines(from, to) excludes `to` (checked live), hence last + 1
 local COLOR = { ok = "green", skip = "yellow", err = "red" }
-function rm.out(text, level)
+function rmap.out(text, level)
     local last = getLastLineNumber("main")
     local cur = getLines(last, last + 1)[1]
     if cur and cur ~= "" then echo("\n") end
@@ -38,47 +38,47 @@ function rm.out(text, level)
     end
 end
 
-function rm.on(event, fn)
+function rmap.on(event, fn)
     local id = registerAnonymousEventHandler(event, fn)
-    rm.ids.handler[#rm.ids.handler + 1] = id
+    rmap.ids.handler[#rmap.ids.handler + 1] = id
     return id
 end
 
-function rm.alias(pattern, fn)
+function rmap.alias(pattern, fn)
     -- unverified: tempAlias accepts a Lua function as its code argument
     local id = tempAlias(pattern, fn)
-    rm.ids.alias[#rm.ids.alias + 1] = id
+    rmap.ids.alias[#rmap.ids.alias + 1] = id
     return id
 end
 
-function rm.start()
-    if rm.started then return end
-    rm.started = true
-    for i = 1, #rm.inits do rm.inits[i]() end
+function rmap.start()
+    if rmap.started then return end
+    rmap.started = true
+    for i = 1, #rmap.inits do rmap.inits[i]() end
 end
 
-function rm.stop()
-    for i = 1, #rm.ids.handler do
-        killAnonymousEventHandler(rm.ids.handler[i])
+function rmap.stop()
+    for i = 1, #rmap.ids.handler do
+        killAnonymousEventHandler(rmap.ids.handler[i])
     end
-    for i = 1, #rm.ids.trigger do killTrigger(rm.ids.trigger[i]) end
-    for i = 1, #rm.ids.alias do killAlias(rm.ids.alias[i]) end
-    rm.job = nil
-    if rm.ids.timer then killTimer(rm.ids.timer) end
+    for i = 1, #rmap.ids.trigger do killTrigger(rmap.ids.trigger[i]) end
+    for i = 1, #rmap.ids.alias do killAlias(rmap.ids.alias[i]) end
+    rmap.job = nil
+    if rmap.ids.timer then killTimer(rmap.ids.timer) end
     -- the one documented global exception (see 60_speedwalk)
-    if doSpeedWalk == rm.speedwalk then doSpeedWalk = nil end
-    rm.ids = { handler = {}, trigger = {}, alias = {} }
-    rm.started = false
+    if doSpeedWalk == rmap.speedwalk then doSpeedWalk = nil end
+    rmap.ids = { handler = {}, trigger = {}, alias = {} }
+    rmap.started = false
 end
 
-rm.on("sysLoadEvent", function() rm.start() end)
+rmap.on("sysLoadEvent", function() rmap.start() end)
 -- unverified: sysInstall is raised with (event, packageName) after an
 -- .mpackage install, and after this script body has already run
-rm.on("sysInstall", function(_, pkg)
-    if pkg == rm.name then rm.start() end
+rmap.on("sysInstall", function(_, pkg)
+    if pkg == rmap.name then rmap.start() end
 end)
-rm.on("sysUninstallPackage", function(_, pkg)
-    if pkg == rm.name then rm.stop() end
+rmap.on("sysUninstallPackage", function(_, pkg)
+    if pkg == rmap.name then rmap.stop() end
 end)
 
 -- 20_settings: defaults + merge/load/save of user overrides.
@@ -87,7 +87,7 @@ end)
 -- patterns; persisted UI geometry. No behavior. Phase 0 holds defaults
 -- only; persistence arrives with the first setting that needs it.
 
-rm.settings = {
+rmap.settings = {
     -- Fallback prompt pattern (Lua pattern), used when the connection
     -- sends no GA and by offline replay. Not end-anchored. See
     -- docs/output-format.md "Prompt patterns".
@@ -151,28 +151,28 @@ rm.settings = {
     },
 }
 
--- 30_capture: line buffer -> room-block detection -> rm.onRoom event.
--- Contract (docs/design.md, docs/output-format.md): rm.onLine(line) is
+-- 30_capture: line buffer -> room-block detection -> rmap.onRoom event.
+-- Contract (docs/design.md, docs/output-format.md): rmap.onLine(line) is
 -- called once per received line (a trigger live, the replay harness
 -- offline). Segments end at a prompt: isPrompt() (GA/EOR) live, else
--- rm.settings.promptPattern. Each exits line in a segment raises
--- raiseEvent("rm.onRoom", {name=, exits={...}, lines={...},
--- fingerprint=}), then rm.onSegment(n); a move-fail line raises
--- rm.onMoveFail. Knows nothing about the map.
+-- rmap.settings.promptPattern. Each exits line in a segment raises
+-- raiseEvent("rmap.onRoom", {name=, exits={...}, lines={...},
+-- fingerprint=}), then rmap.onSegment(n); a move-fail line raises
+-- rmap.onMoveFail. Knows nothing about the map.
 
-rm.cap = { buf = {}, warned = false }
+rmap.cap = { buf = {}, warned = false }
 
 local function isNoise(line)
     if line:find("^%s*$") then return true end
-    for i = 1, #rm.settings.ignore do
-        if line:find(rm.settings.ignore[i]) then return true end
+    for i = 1, #rmap.settings.ignore do
+        if line:find(rmap.settings.ignore[i]) then return true end
     end
     return false
 end
 
 -- Exits starting at buf[i]: returns exits list, index of last line.
 local function parseExits(buf, i)
-    local s = rm.settings
+    local s = rmap.settings
     if buf[i]:find(s.exitsNone) then return {}, i end
     local solo = buf[i]:match(s.exitsSolo)
     if solo then return { solo:lower() }, i end
@@ -242,7 +242,7 @@ local function scan(buf)
                 local lines = {}
                 for k = t, last do lines[#lines + 1] = buf[k] end
                 local name = buf[t]:match("^(.-)%s*$")
-                raiseEvent("rm.onRoom", {
+                raiseEvent("rmap.onRoom", {
                     name = name, exits = exits, lines = lines,
                     fingerprint = fingerprint(name, exits),
                 })
@@ -255,86 +255,86 @@ local function scan(buf)
     return lo
 end
 
--- Raises rm.onRoom per room, then rm.onSegment(n) with the count of
+-- Raises rmap.onRoom per room, then rmap.onSegment(n) with the count of
 -- non-noise lines, so the tracker can close commands that print no room.
 -- keepTail: on a forced flush keep the unscanned tail so a room whose
 -- title is already buffered is not split from its exits line.
 local function flush(keepTail)
-    local buf = rm.cap.buf
-    rm.cap.buf = {}
+    local buf = rmap.cap.buf
+    rmap.cap.buf = {}
     local lo = scan(buf)
     if keepTail then
         for k = math.max(lo, #buf - 40), #buf do
-            rm.cap.buf[#rm.cap.buf + 1] = buf[k]
+            rmap.cap.buf[#rmap.cap.buf + 1] = buf[k]
         end
     end
     local n = 0
     for i = 1, #buf do
         if not isNoise(buf[i]) then n = n + 1 end
     end
-    raiseEvent("rm.onSegment", n)
+    raiseEvent("rmap.onSegment", n)
 end
 
-function rm.onLine(line)
-    local c = rm.cap
-    if isPrompt() or line:find(rm.settings.promptPattern) then
+function rmap.onLine(line)
+    local c = rmap.cap
+    if isPrompt() or line:find(rmap.settings.promptPattern) then
         c.warned = false
         flush()
         return
     end
     -- a reconnect banner (login art) is never part of a room
     if line:find("^%% Connected to") then c.buf = {} end
-    for i = 1, #rm.settings.moveFail do
-        if line:find(rm.settings.moveFail[i]) then
-            raiseEvent("rm.onMoveFail")
+    for i = 1, #rmap.settings.moveFail do
+        if line:find(rmap.settings.moveFail[i]) then
+            raiseEvent("rmap.onMoveFail")
             break
         end
     end
     c.buf[#c.buf + 1] = line
-    if #c.buf > rm.settings.maxBlockLines then
+    if #c.buf > rmap.settings.maxBlockLines then
         if not c.warned then
             c.warned = true
-            rm.out("no usable prompt (no GA, and the prompt "
+            rmap.out("no usable prompt (no GA, and the prompt "
                 .. "pattern never matched in " .. #c.buf .. " lines); "
-                .. "set rm.settings.promptPattern", "err")
+                .. "set rmap.settings.promptPattern", "err")
         end
         flush(true)
     end
 end
 
-rm.inits[#rm.inits + 1] = function()
+rmap.inits[#rmap.inits + 1] = function()
     -- unverified: tempRegexTrigger("^", fn) fires for every line, and
     -- the global `line` holds the current line inside fn
-    local id = tempRegexTrigger("^", function() rm.onLine(line) end)
-    rm.ids.trigger[#rm.ids.trigger + 1] = id
+    local id = tempRegexTrigger("^", function() rmap.onLine(line) end)
+    rmap.ids.trigger[#rmap.ids.trigger + 1] = id
 end
 
 -- 40_tracker: expectation queue and sync state.
 -- Contract (docs/design.md, docs/mapper-protocol.md): sysDataSendRequest
 -- pushes one classified expectation (VERIFY / PREVIEW / ADVANCE /
 -- MAYBE_MOVE) per sent command; sync state is SYNCED / UNSYNCED /
--- PENDING; each rm.onRoom block resolves the queue head. Decides
--- advance/verify/preview. Never writes the graph (rm.build does).
+-- PENDING; each rmap.onRoom block resolves the queue head. Decides
+-- advance/verify/preview. Never writes the graph (rmap.build does).
 -- Rules 3 and 4 of the protocol hold by construction: T.send below is
 -- the only function that pushes onto the queue; no module calls
 -- sendSocket or pushes directly.
 
-rm.track = { q = {}, pos = nil, handled = false, following = false }
-local T = rm.track
+rmap.track = { q = {}, pos = nil, handled = false, following = false }
+local T = rmap.track
 
 -- name or abbreviation -> full direction name
 local dirAlias = {}
-for name, d in pairs(rm.settings.dirs) do
+for name, d in pairs(rmap.settings.dirs) do
     dirAlias[name] = name
     dirAlias[d.abbr] = name
 end
 
-function rm.now() return os.time() end
+function rmap.now() return os.time() end
 
 local function classify(cmd)
     local word = cmd:match("^(%S+)")
-    if rm.settings.verifyVerbs[word] then return "VERIFY" end
-    if rm.settings.previewVerbs[word] then return "PREVIEW" end
+    if rmap.settings.verifyVerbs[word] then return "VERIFY" end
+    if rmap.settings.previewVerbs[word] then return "PREVIEW" end
     if dirAlias[cmd] then return "ADVANCE", dirAlias[cmd] end
     return "MAYBE_MOVE"
 end
@@ -347,7 +347,7 @@ local function done(e, b, why)
 end
 
 local function expire()
-    local cutoff = rm.now() - rm.settings.expectTimeout
+    local cutoff = rmap.now() - rmap.settings.expectTimeout
     local dead = {}
     while T.q[1] and T.q[1].t < cutoff do
         dead[#dead + 1] = table.remove(T.q, 1)
@@ -370,7 +370,7 @@ function T.send(_, cmd)
             expire()
             local kind, dir = classify(part)
             T.q[#T.q + 1] = { kind = kind, cmd = part, dir = dir,
-                t = rm.now(), cb = T.hook }
+                t = rmap.now(), cb = T.hook }
             T.hook = nil
             -- unverified: `follow` syntax; "follow self"/"unfollow" end it
             local verb, arg = part:match("^(%S+)%s*(%S*)")
@@ -391,9 +391,9 @@ function T.exec(cmd, cb)
     send(cmd)
     T.hook = nil
     -- a silent game must not stall a job: expire() runs from this timer
-    if rm.ids.timer then killTimer(rm.ids.timer) end
+    if rmap.ids.timer then killTimer(rmap.ids.timer) end
     -- unverified: tempTimer(seconds, fn) returns a timer id for killTimer
-    rm.ids.timer = tempTimer(rm.settings.expectTimeout + 1, expire)
+    rmap.ids.timer = tempTimer(rmap.settings.expectTimeout + 1, expire)
 end
 
 local function resolve(e, b)
@@ -401,15 +401,15 @@ local function resolve(e, b)
     local cur = T.pos
     if not cur then
         -- never guess: only a unique fingerprint match re-syncs
-        T.pos = rm.build.find(b.fingerprint)
+        T.pos = rmap.build.find(b.fingerprint)
     elseif e.kind == "ADVANCE" then
-        T.pos = rm.build.advance(cur, e.dir, b)
-    elseif rm.build.fp(cur) == b.fingerprint then    -- VERIFY / no move
+        T.pos = rmap.build.advance(cur, e.dir, b)
+    elseif rmap.build.fp(cur) == b.fingerprint then    -- VERIFY / no move
         return
     elseif e.kind == "VERIFY" then
-        T.pos = rm.build.find(b.fingerprint)
+        T.pos = rmap.build.find(b.fingerprint)
     else
-        T.pos = rm.build.special(cur, e.cmd, b)
+        T.pos = rmap.build.special(cur, e.cmd, b)
     end
 end
 
@@ -452,13 +452,13 @@ function T.onSegment(_, n)
 end
 
 -- Explicit orphan creation / re-sync entry point (used by `rmap where`).
-function T.adopt(b) T.pos = rm.build.adopt(b) T.focus() end
+function T.adopt(b) T.pos = rmap.build.adopt(b) T.focus() end
 
-rm.inits[#rm.inits + 1] = function()
-    rm.on("sysDataSendRequest", T.send)
-    rm.on("rm.onRoom", T.onRoom)
-    rm.on("rm.onMoveFail", T.onMoveFail)
-    rm.on("rm.onSegment", T.onSegment)
+rmap.inits[#rmap.inits + 1] = function()
+    rmap.on("sysDataSendRequest", T.send)
+    rmap.on("rmap.onRoom", T.onRoom)
+    rmap.on("rmap.onMoveFail", T.onMoveFail)
+    rmap.on("rmap.onSegment", T.onSegment)
 end
 
 -- 50_builder: the ONLY module that writes the map graph.
@@ -469,13 +469,13 @@ end
 -- (the tracker then goes UNSYNCED; nothing is guessed or created).
 -- Fingerprints persist as room user data "fp".
 
-rm.build = {}
-local B = rm.build
+rmap.build = {}
+local B = rmap.build
 -- Auto-created rooms, newest last: { id, from, dir | cmd } (for undo).
 B.created = {}
 
 local function areaId()
-    local name = rm.settings.areaName
+    local name = rmap.settings.areaName
     -- unverified: getAreaTable() returns {name = id}; addAreaName returns the id
     return getAreaTable()[name] or addAreaName(name)
 end
@@ -509,7 +509,7 @@ function B.find(fp)
 end
 
 local function link(from, to, dir)
-    local n = rm.settings.dirs[dir].num
+    local n = rmap.settings.dirs[dir].num
     -- unverified: setExit takes the direction number 1-12
     setExit(from, to, n)
     -- unverified: setExit leaves a stub in place, so clear it
@@ -540,7 +540,7 @@ local function stub(id, b)
     -- unverified: getRoomExits returns {directionName = roomId}
     local linked = getRoomExits(id)
     for _, ex in ipairs(b.exits) do
-        local d = rm.settings.dirs[ex]
+        local d = rmap.settings.dirs[ex]
         if d and not linked[ex] then setExitStub(id, d.num, true) end
     end
 end
@@ -550,7 +550,7 @@ end
 local function neighbor(from, dir)
     local to = getRoomExits(from)[dir]
     if to then return to, true end
-    local d = rm.settings.dirs[dir]
+    local d = rmap.settings.dirs[dir]
     local x, y, z = getRoomCoordinates(from)
     return roomAt(x + d.dx, y + d.dy, z + d.dz), false
 end
@@ -585,7 +585,7 @@ local function reservedFor(from, dir)
     local out = {}
     local x, y, z = getRoomCoordinates(from)
     for ex in (B.fp(from):match("|(.*)$") or ""):gmatch("[^,]+") do
-        local d = rm.settings.dirs[ex]
+        local d = rmap.settings.dirs[ex]
         if d and ex ~= dir then
             out[(x + d.dx) .. "," .. (y + d.dy) .. "," .. (z + d.dz)] = true
         end
@@ -606,7 +606,7 @@ local function near(from, fp, opp)
         if id ~= from and (not back or back == from)
             and getRoomExits(from)[opp] ~= id
             and math.max(math.abs(a - x), math.abs(b - y),
-                math.abs(c - z)) <= rm.settings.maxSearchDistance then
+                math.abs(c - z)) <= rmap.settings.maxSearchDistance then
             if hit then return nil end               -- ambiguous
             hit = id
         end
@@ -617,7 +617,7 @@ end
 -- peer: a `peer` preview from `from` (rmap scan): new rooms are stubs and
 -- the way back is left as a soft exit stub, never a real link.
 function B.advance(from, dir, b, peer)
-    local d = rm.settings.dirs[dir]
+    local d = rmap.settings.dirs[dir]
     local to, linked = neighbor(from, dir)
     -- An unlinked room on the expected cell is only a coordinate guess;
     -- a different room there means the map does not fit the grid, so
@@ -653,7 +653,7 @@ function B.special(from, cmd, b, peer)
         if not peer then confirm(to) end
     else
         local x, y, z = getRoomCoordinates(from)
-        local dz = rm.settings.freeformDz[cmd]
+        local dz = rmap.settings.freeformDz[cmd]
         if dz then
             x, y, z = freeCell(x, y, z + dz)
         else
@@ -685,7 +685,7 @@ function B.undo()
     local e = table.remove(B.created)
     if not e then return nil end
     if e.dir then
-        local n = rm.settings.dirs[e.dir].num
+        local n = rmap.settings.dirs[e.dir].num
         -- unverified: setExit(from, -1, dir) removes the exit
         setExit(e.from, -1, n)
         setExitStub(e.from, n, true)
@@ -705,36 +705,36 @@ end
 -- Mudlet calls the global doSpeedWalk() after a path is computed
 -- (gotoRoom, map clicks): speedWalkDir is the list of commands,
 -- speedWalkPath the list of room ids each step should land in. It is
--- the one global outside `rm` (set at start, cleared by rm.stop).
--- A job is one command sequence at a time, tracked in rm.job.
+-- the one global outside `rmap` (set at start, cleared by rmap.stop).
+-- A job is one command sequence at a time, tracked in rmap.job.
 
-local T = rm.track
+local T = rmap.track
 
 -- Shared guard for every job that sends commands (speedwalk, scan, where).
-function rm.canRun()
+function rmap.canRun()
     if T.following then
-        rm.out("refused while following someone", "skip")
-    elseif rm.job then
-        rm.out("busy with " .. rm.job, "skip")
+        rmap.out("refused while following someone", "skip")
+    elseif rmap.job then
+        rmap.out("busy with " .. rmap.job, "skip")
     else
         return true
     end
 end
 
-function rm.speedwalk()
-    if not rm.canRun() then return end
+function rmap.speedwalk()
+    if not rmap.canRun() then return end
     local dirs, path = speedWalkDir, speedWalkPath
     -- unverified: speedWalkDir/speedWalkPath are tables set by Mudlet
     -- (path entries may be strings), and speedWalkPath[i] is the room
     -- reached after step i (the start room is not listed)
     if type(dirs) ~= "table" or #dirs == 0 then return end
-    rm.job = "speedwalk"
+    rmap.job = "speedwalk"
     local i = 0
     local function step()
         i = i + 1
         if i > #dirs then
-            rm.job = nil
-            rm.out("speedwalk: arrived", "ok")
+            rmap.job = nil
+            rmap.out("speedwalk: arrived", "ok")
             return
         end
         T.exec(dirs[i], function(b, why)
@@ -742,16 +742,16 @@ function rm.speedwalk()
             if b and T.pos and (not want or T.pos == want) then
                 return step()
             end
-            rm.job = nil
-            rm.out("speedwalk stopped at step " .. i .. " ("
+            rmap.job = nil
+            rmap.out("speedwalk stopped at step " .. i .. " ("
                 .. dirs[i] .. "): " .. (why or "unexpected room"), "skip")
         end)
     end
     step()
 end
 
-rm.inits[#rm.inits + 1] = function()
-    doSpeedWalk = rm.speedwalk
+rmap.inits[#rmap.inits + 1] = function()
+    doSpeedWalk = rmap.speedwalk
 end
 
 -- 70_ui: Geyser container, Geyser.Mapper pane, status label, buttons.
@@ -759,17 +759,17 @@ end
 -- kill-switch; pure consumer of tracker/builder state.
 -- Phase 0: empty; implemented in Phase 5.
 
--- 80_commands: all aliases (`rm <command>`).
+-- 80_commands: all aliases (`rmap <command>`).
 -- Contract (docs/design.md): rmap start/stop/goto/path/where/scan/undo/fix/
 -- save/load/prompt(Phase 6)/exits/fail/debug/ui/reload/help. Pure
 -- consumer of the other modules.
--- Phase 3: where, scan, undo (start/stop only toggle rm.mapping, which
+-- Phase 3: where, scan, undo (start/stop only toggle rmap.mapping, which
 -- lets `rmap where` create an orphan room when nothing matches).
 
-rm.commands = {}
+rmap.commands = {}
 
-function rm.commands.help()
-    rm.out("retromud " .. rm.version .. " - RetroMUD auto-mapper")
+function rmap.commands.help()
+    rmap.out("retromud " .. rmap.version .. " - RetroMUD auto-mapper")
     for _, c in ipairs({
         { "rmap help", "show this text" },
         { "rmap start|stop", "mapping on/off (where may create a room)" },
@@ -777,19 +777,19 @@ function rm.commands.help()
         { "rmap scan", "peer every exit of this room and map the stubs" },
         { "rmap undo", "remove the last auto-created room" },
     }) do
-        rm.out(string.format("  <cyan>%-16s<reset>%s", c[1], c[2]), "markup")
+        rmap.out(string.format("  <cyan>%-16s<reset>%s", c[1], c[2]), "markup")
     end
 end
 
-local T, B = rm.track, rm.build
+local T, B = rmap.track, rmap.build
 
-function rm.commands.start() rm.mapping = true rm.out("mapping on", "ok") end
-function rm.commands.stop() rm.mapping = false rm.out("mapping off", "ok") end
+function rmap.commands.start() rmap.mapping = true rmap.out("mapping on", "ok") end
+function rmap.commands.stop() rmap.mapping = false rmap.out("mapping off", "ok") end
 
 local function finish(msg, cb, ok)
-    rm.job = nil
+    rmap.job = nil
     T.focus()
-    if msg then rm.out(msg, ok and "ok" or "skip") end
+    if msg then rmap.out(msg, ok and "ok" or "skip") end
     if cb then cb(ok) end
 end
 
@@ -830,7 +830,7 @@ local function where(cb)
             return finish("where: synced", cb, true)
         end
         if #c == 0 then
-            if not rm.mapping then
+            if not rmap.mapping then
                 return finish("where: no match in the map", cb, false)
             end
             T.adopt(b)
@@ -846,16 +846,16 @@ local function where(cb)
     end)
 end
 
-function rm.commands.where()
-    if not rm.canRun() then return end
-    rm.job = "where"
+function rmap.commands.where()
+    if not rmap.canRun() then return end
+    rmap.job = "where"
     where()
 end
 
 -- rmap scan: peer every exit that is not already linked to a real room.
-function rm.commands.scan()
-    if not rm.canRun() then return end
-    rm.job = "scan"
+function rmap.commands.scan()
+    if not rmap.canRun() then return end
+    rmap.job = "scan"
     local function scan()
         T.exec("look", function(b)
             local cur = T.pos
@@ -867,7 +867,7 @@ function rm.commands.scan()
             local order = {}
             for _, want in ipairs({ true, false }) do
                 for _, ex in ipairs(b.exits) do
-                    if (rm.settings.dirs[ex] ~= nil) == want then
+                    if (rmap.settings.dirs[ex] ~= nil) == want then
                         order[#order + 1] = ex
                     end
                 end
@@ -886,7 +886,7 @@ function rm.commands.scan()
                 T.exec("peer " .. ex, function(pb)
                     if pb then
                         local n = #B.created
-                        if rm.settings.dirs[ex] then
+                        if rmap.settings.dirs[ex] then
                             B.advance(cur, ex, pb, true)
                         else
                             B.special(cur, ex, pb, true)
@@ -902,34 +902,34 @@ function rm.commands.scan()
     if T.state() ~= "UNSYNCED" then return scan() end
     where(function(ok)
         if not ok then return finish("scan: could not sync", nil) end
-        rm.job = "scan"
+        rmap.job = "scan"
         scan()
     end)
 end
 
-function rm.commands.undo()
+function rmap.commands.undo()
     local e = B.undo()
-    if not e then return rm.out("undo: nothing to undo", "skip") end
+    if not e then return rmap.out("undo: nothing to undo", "skip") end
     if T.pos == e.id then T.pos = nil end
-    rm.out("undo: removed '" .. e.name .. "' (room " .. e.id .. ")", "ok")
+    rmap.out("undo: removed '" .. e.name .. "' (room " .. e.id .. ")", "ok")
 end
 
-function rm.command(arg)
+function rmap.command(arg)
     local cmd = arg:match("^%s*(%S*)")
     if cmd == "" then cmd = "help" end
-    local fn = rm.commands[cmd]
+    local fn = rmap.commands[cmd]
     if fn then
         fn()
     else
-        rm.out("unknown command '" .. cmd .. "'. Try 'rmap help'.", "err")
+        rmap.out("unknown command '" .. cmd .. "'. Try 'rmap help'.", "err")
     end
 end
 
-rm.inits[#rm.inits + 1] = function()
+rmap.inits[#rmap.inits + 1] = function()
     -- unverified: an unmatched optional group leaves matches[2] nil or ""
-    rm.alias("^rmap( .*)?$", function() rm.command(matches[2] or "") end)
+    rmap.alias("^rmap( .*)?$", function() rmap.command(matches[2] or "") end)
 end
 
 -- Last module: a script re-run (save in the editor) does not raise
 -- sysLoadEvent again, so resume if the previous instance was running.
-if rm.restart then rm.restart = nil rm.start() end
+if rmap.restart then rmap.restart = nil rmap.start() end
