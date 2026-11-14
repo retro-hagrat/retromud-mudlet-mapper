@@ -26,3 +26,7 @@ To update, uninstall the old `retromud` package in the Package Manager, then ins
 | [docs/output-format.md](docs/output-format.md) | Normative spec of RetroMUD's room-block output grammar and the patterns derived from it |
 | [docs/roadmap.md](docs/roadmap.md) | Build phases with acceptance criteria |
 | [test/captures/README.md](test/captures/README.md) | Raw session logs (calibration corpus) and conventions |
+
+## License
+
+[MIT](LICENSE).
