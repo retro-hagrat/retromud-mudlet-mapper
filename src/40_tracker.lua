@@ -109,6 +109,8 @@ local function resolve(e, b)
         T.pos = rmap.build.find(b.fingerprint)
     elseif e.kind == "ADVANCE" then
         T.pos = move.advance(cur, e.dir, b)
+    elseif e.kind == "MAYBE_MOVE" and rmap.build.known(cur, e.cmd, b) then
+        T.pos = rmap.build.known(cur, e.cmd, b)      -- into a look-alike room
     elseif rmap.build.fp(cur) == b.fingerprint then    -- VERIFY / no move
         return
     elseif e.kind == "VERIFY" then

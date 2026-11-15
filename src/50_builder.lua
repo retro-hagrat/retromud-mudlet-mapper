@@ -194,7 +194,9 @@ function B.advance(from, dir, b, peer)
         setExitStub(from, d.num, true)
         to = nil
     end
-    to = to or near(from, b.fingerprint, d.opp)
+    -- a preview must not fold two look-alike neighbours into one room:
+    -- only a real link (or the cell guess above) may reuse a room
+    to = to or (not peer and near(from, b.fingerprint, d.opp)) or nil
     if to then
         if B.fp(to) ~= b.fingerprint then return nil end
         link(from, to, dir)
@@ -225,7 +227,10 @@ end
 -- room: a special exit to a known or new room.
 function B.special(from, cmd, b, peer)
     -- unverified: getSpecialExitsSwap(id) returns {command = roomId}
-    local to = getSpecialExitsSwap(from)[cmd] or B.find(b.fingerprint)
+    local to = getSpecialExitsSwap(from)[cmd]
+    -- a walked move may land in a known room; a preview never merges by
+    -- fingerprint alone (look-alike rooms are different rooms)
+    if not to and not peer then to = B.find(b.fingerprint) end
     -- a peered neighbour that looks like this room is another room, not a loop
     if to == from then to = nil end
     if to then
@@ -245,6 +250,13 @@ function B.special(from, cmd, b, peer)
     end
     addSpecialExit(from, to, cmd)
     return to
+end
+
+-- The room a known special exit of `from` leads to when `b` is its block,
+-- else nil (twin rooms: same fingerprint, different room).
+function B.known(from, cmd, b)
+    local to = getSpecialExitsSwap(from)[cmd]
+    if to and to ~= from and B.fp(to) == b.fingerprint then return to end
 end
 
 -- Read-only B.advance/B.special for when mapping is off: a known link

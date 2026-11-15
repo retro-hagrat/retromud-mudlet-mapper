@@ -405,4 +405,19 @@ assert(rmap.job == nil, "scan left running")
 local peers = 0
 for i = before, #S.sent do if S.sent[i]:find("^peer ") then peers = peers + 1 end end
 assert(peers == 2, "old scan resumed: " .. peers .. " peers: " .. table.concat(S.sent, ";"))
+-- a known special exit between look-alike rooms moves the position
+fresh({ A = room("Twin", { gate = "B" }), B = room("Twin", { gate = "A" }) }, "A")
+adopt(); run("rmap scan")
+local twinA = rmap.track.pos
+walk("gate")
+assert(rmap.track.pos and rmap.track.pos ~= twinA, "stayed in the old twin")
+-- scan keeps look-alike neighbours apart
+fresh({ H = room("Hub", { north = "N", east = "E" }), N = room("Twin", { up = "H" }),
+    E = room("Twin", { up = "H" }) }, "H")
+adopt(); run("rmap scan")
+assert(S.roomCount() == 3, "look-alike neighbours merged: " .. S.roomCount())
+fresh({ H = room("Hub", { gate = "N", tavern = "E" }), N = room("Twin", { up = "H" }),
+    E = room("Twin", { up = "H" }) }, "H")
+adopt(); run("rmap scan")
+assert(S.roomCount() == 3, "look-alike special neighbours merged: " .. S.roomCount())
 print("jobs_test ok")
