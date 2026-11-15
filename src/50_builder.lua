@@ -22,19 +22,21 @@ function B.fp(id)
     return getRoomUserData(id, "fp")
 end
 
-local function roomAt(x, y, z)
+-- area: defaults to the one new rooms go into; pass a room's own area
+-- when the cell is relative to that room (coordinates are per area).
+local function roomAt(x, y, z, area)
     -- unverified: getRoomsByPosition(area, x, y, z) returns a table of ids
-    for _, id in pairs(getRoomsByPosition(areaId(), x, y, z)) do
+    for _, id in pairs(getRoomsByPosition(area or areaId(), x, y, z)) do
         return id
     end
 end
 
+-- Every room with this fingerprint, in any area: `rmap area` changes
+-- where new rooms go, not which known rooms the player can be in.
 local function candidates(fp)
     local out = {}
     -- unverified: searchRoomUserData(key, value) returns the matching room ids
-    for _, id in pairs(searchRoomUserData("fp", fp)) do
-        if getRoomArea(id) == areaId() then out[#out + 1] = id end
-    end
+    for _, id in pairs(searchRoomUserData("fp", fp)) do out[#out + 1] = id end
     return out
 end
 B.candidates = candidates
@@ -89,7 +91,7 @@ local function neighbor(from, dir)
     if to then return to, true end
     local d = rmap.settings.dirs[dir]
     local x, y, z = getRoomCoordinates(from)
-    return roomAt(x + d.dx, y + d.dy, z + d.dz), false
+    return roomAt(x + d.dx, y + d.dy, z + d.dz, getRoomArea(from)), false
 end
 
 -- The grid is only a layout: the MUD's exits need not fit on it. The
@@ -140,7 +142,8 @@ local function near(from, fp, opp)
         local back = getRoomExits(id)[opp]
         -- the room already linked behind us is never "ahead" (a
         -- corridor of identical rooms would fold back on itself)
-        if id ~= from and (not back or back == from)
+        if id ~= from and getRoomArea(id) == getRoomArea(from)
+            and (not back or back == from)
             and getRoomExits(from)[opp] ~= id
             and math.max(math.abs(a - x), math.abs(b - y),
                 math.abs(c - z)) <= rmap.settings.maxSearchDistance then
@@ -238,12 +241,9 @@ function B.special(from, cmd, b, peer)
         if not peer then confirm(to) end
     else
         local x, y, z = getRoomCoordinates(from)
-        local dz = rmap.settings.freeformDz[cmd]
-        if dz then
-            x, y, z = freeCell(x, y, z + dz)
-        else
-            repeat x = x + 1 until not roomAt(x, y, z)  -- nearest free cell
-        end
+        -- nearest free cell beside the room, off its cardinal exits' cells
+        x, y, z = freeCell(x, y, z + (rmap.settings.freeformDz[cmd] or 0),
+            reservedFor(from), x, y)
         to = create(b, x, y, z, peer)
         B.created[#B.created + 1] = { id = to, from = from, cmd = cmd }
         stub(to, b)

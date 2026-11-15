@@ -176,6 +176,8 @@ function rmap.commands.area(name)
 end
 
 function rmap.commands.undo()
+    -- a running job holds room ids that undo would delete under it
+    if rmap.job then return rmap.out("busy with " .. rmap.job, "skip") end
     local e = B.undo()
     if not e then return rmap.out("undo: nothing to undo", "skip") end
     if T.pos == e.id then T.pos = nil end

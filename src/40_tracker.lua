@@ -91,7 +91,11 @@ function T.exec(cmd, cb)
     T.hook = cb
     -- unverified: sysDataSendRequest handlers run synchronously in send()
     send(cmd)
+    -- no expectation took the callback (not connected, no event): end the
+    -- job now, or it would wait forever and block every later job
+    local lost = T.hook
     T.hook = nil
+    if lost then return lost(nil, "not sent") end
     -- a silent game must not stall a job: expire() runs from this timer
     if rmap.ids.timer then killTimer(rmap.ids.timer) end
     -- unverified: tempTimer(seconds, fn) returns a timer id for killTimer

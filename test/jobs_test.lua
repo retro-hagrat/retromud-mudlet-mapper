@@ -420,4 +420,31 @@ fresh({ H = room("Hub", { gate = "N", tavern = "E" }), N = room("Twin", { up = "
     E = room("Twin", { up = "H" }) }, "H")
 adopt(); run("rmap scan")
 assert(S.roomCount() == 3, "look-alike special neighbours merged: " .. S.roomCount())
+-- a command that never reaches the game (not connected) ends the job
+fresh({ A = room("Hub", { north = "N" }), N = room("North", { south = "A" }) }, "A")
+local realSend = send
+send = function(cmd) S.sent[#S.sent + 1] = cmd end      -- no sysDataSendRequest
+run("rmap where")
+send = realSend
+assert(rmap.job == nil and said():find("where: no room seen", 1, true), "job wedged on an unsent command")
+-- undo is refused while a job holds room ids
+fresh({ A = room("Hub", { north = "N" }), N = room("North", { south = "A" }) }, "A")
+adopt(); rmap.commands.scan()                          -- look unanswered: job runs
+local n0 = S.roomCount()
+assert(S.alias("rmap undo"))
+assert(S.roomCount() == n0 and said():find("busy with scan", 1, true), "undo ran under a job")
+-- rooms mapped in another area are still found after `rmap area`
+fresh({ A = room("Hub", { north = "N" }), N = room("North", { south = "A" }) }, "A")
+adopt(); local hub = rmap.track.pos
+run("rmap area Zone2"); rmap.track.pos = nil
+run("rmap where")
+assert(rmap.track.pos == hub and S.roomCount() == 1, "where duplicated a room from another area")
+-- a freeform exit's room does not squat on a cardinal exit's cell
+fresh({ A = room("Hub", { east = "E", gate = "G" }), E = room("East", { west = "A" }),
+    G = room("Gated", { leave = "A" }) }, "A")
+adopt(); walk("gate")
+local hx, hy = S.map.rooms[one("Hub")].x, S.map.rooms[one("Hub")].y
+local gr = S.map.rooms[one("Gated")]
+assert(not (gr.x == hx + 1 and gr.y == hy), "gate room took the east cell")
+assert(math.max(math.abs(gr.x - hx), math.abs(gr.y - hy)) == 1, "gate room not beside the hub")
 print("jobs_test ok")
