@@ -98,6 +98,7 @@ function rmap.commands.scan()
     rmap.job = "scan"
     local function scan()
         T.exec("look", function(b)
+            if rmap.job ~= "scan" then return end        -- cancelled
             local cur = T.pos
             if not b or not cur or B.fp(cur) ~= b.fingerprint then
                 return finish("scan: position lost", nil)
@@ -124,6 +125,7 @@ function rmap.commands.scan()
                     return nextExit()
                 end
                 T.exec("peer " .. ex, function(pb)
+                    if rmap.job ~= "scan" or T.pos ~= cur then return end
                     if pb then
                         local n = #B.created
                         if rmap.settings.dirs[ex] then

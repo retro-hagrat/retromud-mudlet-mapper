@@ -12,7 +12,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud"
-rmap.version = "0.0.7"
+rmap.version = "0.0.8"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
@@ -385,6 +385,13 @@ function T.send(_, cmd)
     for raw in (tostring(cmd) .. "\n"):gmatch("(.-)\r?\n") do
         local part = raw:lower():match("^%s*(.-)%s*$")
         if part ~= "" then
+            -- the player moved on mid-scan: later previews would come
+            -- from another room, so the scan stops here (its callbacks
+            -- see rmap.job ~= "scan" and drop out)
+            if not T.hook and rmap.job == "scan" then
+                rmap.job = nil
+                rmap.out("scan: stopped, you sent a command", "skip")
+            end
             expire()
             local kind, dir = classify(part)
             T.q[#T.q + 1] = { kind = kind, cmd = part, dir = dir,
@@ -921,6 +928,7 @@ function rmap.commands.scan()
     rmap.job = "scan"
     local function scan()
         T.exec("look", function(b)
+            if rmap.job ~= "scan" then return end        -- cancelled
             local cur = T.pos
             if not b or not cur or B.fp(cur) ~= b.fingerprint then
                 return finish("scan: position lost", nil)
@@ -947,6 +955,7 @@ function rmap.commands.scan()
                     return nextExit()
                 end
                 T.exec("peer " .. ex, function(pb)
+                    if rmap.job ~= "scan" or T.pos ~= cur then return end
                     if pb then
                         local n = #B.created
                         if rmap.settings.dirs[ex] then

@@ -207,6 +207,24 @@ assert(said():find("no match", 1, true))
 run("rmap start"); run("rmap where")
 assert(S.roomCount() == 1 and rmap.track.state() == "SYNCED")
 
+-- the player moves while a scan's peer reply is pending: the scan stops
+-- and never attaches previews from the new room to the old one
+fresh({ a = room("A", { east = "b", north = "c" }), b = room("B", { west = "a", north = "d" }),
+    c = room("C", { south = "a" }), d = room("D", { south = "b" }),
+    }, "a")
+world.a.nb.east = "b" world.a.nb.north = "c" world.b.nb.north = "d"
+adopt()
+assert(S.alias("rmap scan"))
+answered = 1; respond(S.sent[1])                  -- look answered, peer sent
+send("e"); pump()
+local peers = 0
+for _, c in ipairs(S.sent) do if c:find("^peer") then peers = peers + 1 end end
+assert(peers == 1 and rmap.job == nil, "scan went on after the player moved")
+assert(said():find("scan: stopped", 1, true), said())
+local a2, b2 = one("A"), one("B")
+assert(S.map.rooms[b2].exits.north == nil and S.map.rooms[a2].exits.north == nil,
+    "preview from the new room attached to the old one")
+
 -- ===== undo =====
 local gw = { a = room("A", { east = "b" }), b = room("B", { east = "c", west = "a" }),
     c = room("C", { west = "b", gate = "h" }), h = room("Hill", { leave = "c" }) }
