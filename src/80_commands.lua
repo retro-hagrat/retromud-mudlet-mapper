@@ -41,7 +41,7 @@ end
 -- Peer each exit of `b` and drop candidate rooms whose known neighbour
 -- through that exit has another fingerprint. Calls done(room or nil).
 local function narrow(c, b, i, done)
-    if #c == 1 then return done(c[1]) end
+    if #c <= 1 then return done(c[1]) end
     local ex = b.exits[i]
     if not ex then return done(nil) end
     T.exec("peer " .. ex, function(pb)
@@ -130,8 +130,9 @@ function rmap.commands.scan()
                     return nextExit()
                 end
                 T.exec("peer " .. ex, function(pb)
-                    if rmap.job ~= "scan" or not rmap.mapping or T.pos ~= cur then
-                        return
+                    if rmap.job ~= "scan" then return end    -- cancelled
+                    if not rmap.mapping or T.pos ~= cur then
+                        return finish("scan: stopped", nil)
                     end
                     if pb then
                         local n = #B.created

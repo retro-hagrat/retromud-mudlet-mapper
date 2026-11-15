@@ -32,9 +32,9 @@ local function parseExits(buf, i)
         if not isNoise(buf[j]) then rest = rest .. " " .. buf[j] end
     end
     local exits = {}
-    for part in rest:gsub("%.%s*$", ""):gmatch("[^,]+") do
-        local name = part:match("^%s*(.-)%s*$"):gsub("^and%s+", ""):lower()
-        if name ~= "" then exits[#exits + 1] = name end
+    -- names never contain spaces (underscores), so "a and b" splits too
+    for name in rest:gsub("%.%s*$", ""):gmatch("[^,%s]+") do
+        if name ~= "and" then exits[#exits + 1] = name:lower() end
     end
     return exits, j
 end

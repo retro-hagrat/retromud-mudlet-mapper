@@ -19,7 +19,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud"
-rmap.version = "0.0.9"
+rmap.version = "0.0.10"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
@@ -197,9 +197,9 @@ local function parseExits(buf, i)
         if not isNoise(buf[j]) then rest = rest .. " " .. buf[j] end
     end
     local exits = {}
-    for part in rest:gsub("%.%s*$", ""):gmatch("[^,]+") do
-        local name = part:match("^%s*(.-)%s*$"):gsub("^and%s+", ""):lower()
-        if name ~= "" then exits[#exits + 1] = name end
+    -- names never contain spaces (underscores), so "a and b" splits too
+    for name in rest:gsub("%.%s*$", ""):gmatch("[^,%s]+") do
+        if name ~= "and" then exits[#exits + 1] = name:lower() end
     end
     return exits, j
 end
@@ -623,7 +623,7 @@ end
 local function reservedFor(from, dir)
     local out = {}
     local x, y, z = getRoomCoordinates(from)
-    for ex in (B.fp(from):match("|(.*)$") or ""):gmatch("[^,]+") do
+    for ex in (B.fp(from):match("^.*|(.*)$") or ""):gmatch("[^,]+") do
         local d = rmap.settings.dirs[ex]
         if d and ex ~= dir then
             out[(x + d.dx) .. "," .. (y + d.dy) .. "," .. (z + d.dz)] = true
@@ -702,6 +702,7 @@ function B.advance(from, dir, b, peer)
     to = create(b, x, y, z, peer)
     B.created[#B.created + 1] = { id = to, from = from, dir = dir }
     link(from, to, dir)
+    if not peer then setInferred(from, dir, false) end
     for _, ex in ipairs(b.exits) do
         if ex == d.opp and not peer then
             link(to, from, d.opp)
@@ -717,6 +718,8 @@ end
 function B.special(from, cmd, b, peer)
     -- unverified: getSpecialExitsSwap(id) returns {command = roomId}
     local to = getSpecialExitsSwap(from)[cmd] or B.find(b.fingerprint)
+    -- a peered neighbour that looks like this room is another room, not a loop
+    if to == from then to = nil end
     if to then
         if B.fp(to) ~= b.fingerprint then return nil end
         if not peer then confirm(to) end
@@ -879,7 +882,7 @@ end
 -- Peer each exit of `b` and drop candidate rooms whose known neighbour
 -- through that exit has another fingerprint. Calls done(room or nil).
 local function narrow(c, b, i, done)
-    if #c == 1 then return done(c[1]) end
+    if #c &lt;= 1 then return done(c[1]) end
     local ex = b.exits[i]
     if not ex then return done(nil) end
     T.exec("peer " .. ex, function(pb)
@@ -968,8 +971,9 @@ function rmap.commands.scan()
                     return nextExit()
                 end
                 T.exec("peer " .. ex, function(pb)
-                    if rmap.job ~= "scan" or not rmap.mapping or T.pos ~= cur then
-                        return
+                    if rmap.job ~= "scan" then return end    -- cancelled
+                    if not rmap.mapping or T.pos ~= cur then
+                        return finish("scan: stopped", nil)
                     end
                     if pb then
                         local n = #B.created

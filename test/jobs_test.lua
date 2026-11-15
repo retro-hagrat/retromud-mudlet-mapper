@@ -366,4 +366,17 @@ rmap.job = nil
 -- uninstall removes the global and the timer
 S.fire("sysUninstallPackage", "retromud")
 assert(doSpeedWalk == nil and #S.timers == 0)
+-- scan: a neighbour with this room's own fingerprint is no self-loop
+fresh({ A = room("Twin", { gate = "B" }), B = room("Twin", { gate = "A" }) }, "A")
+adopt(); run("rmap scan")
+assert(S.roomCount() == 2, "twin neighbour not created")
+for id, r in pairs(S.map.rooms) do
+    for _, to in pairs(r.special) do assert(to ~= id, "special exit looped onto itself") end
+end
+-- scan: mapping switched off mid-scan ends the job instead of wedging it
+fresh({ A = room("Hub", { north = "N" }), N = room("North", { south = "A" }) }, "A")
+adopt(); rmap.commands.scan()
+answered = answered + 1; respond(S.sent[answered])      -- look -> sends peer
+rmap.commands.stop(); pump()
+assert(rmap.job == nil and said():find("scan: stopped", 1, true), "scan job stuck")
 print("jobs_test ok")

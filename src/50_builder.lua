@@ -121,7 +121,7 @@ end
 local function reservedFor(from, dir)
     local out = {}
     local x, y, z = getRoomCoordinates(from)
-    for ex in (B.fp(from):match("|(.*)$") or ""):gmatch("[^,]+") do
+    for ex in (B.fp(from):match("^.*|(.*)$") or ""):gmatch("[^,]+") do
         local d = rmap.settings.dirs[ex]
         if d and ex ~= dir then
             out[(x + d.dx) .. "," .. (y + d.dy) .. "," .. (z + d.dz)] = true
@@ -200,6 +200,7 @@ function B.advance(from, dir, b, peer)
     to = create(b, x, y, z, peer)
     B.created[#B.created + 1] = { id = to, from = from, dir = dir }
     link(from, to, dir)
+    if not peer then setInferred(from, dir, false) end
     for _, ex in ipairs(b.exits) do
         if ex == d.opp and not peer then
             link(to, from, d.opp)
@@ -215,6 +216,8 @@ end
 function B.special(from, cmd, b, peer)
     -- unverified: getSpecialExitsSwap(id) returns {command = roomId}
     local to = getSpecialExitsSwap(from)[cmd] or B.find(b.fingerprint)
+    -- a peered neighbour that looks like this room is another room, not a loop
+    if to == from then to = nil end
     if to then
         if B.fp(to) ~= b.fingerprint then return nil end
         if not peer then confirm(to) end
