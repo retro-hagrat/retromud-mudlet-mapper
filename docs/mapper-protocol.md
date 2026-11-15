@@ -163,3 +163,8 @@ upgrades.
   or the timeout; unrelated output before it (async chatter) never closes it.
 - Step 2 of the decision tree skips the room already linked behind us, so a
   corridor of identical rooms is not folded back onto itself.
+
+- The way back to a newly created room is linked from its exits line alone
+  and flagged in room user data `bl`. If a real step along it lands in a
+  different room (one-way currents), the link is dropped and corrected
+  instead of going UNSYNCED; a link confirmed by a walk is never replaced.

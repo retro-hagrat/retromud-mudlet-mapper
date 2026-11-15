@@ -10,6 +10,11 @@ rmap.settings = {
     -- docs/output-format.md "Prompt patterns".
     -- Allows an "EQ Tick: " style prefix and a negative Sp.
     promptPattern = "^[%w ]*:? *Hp:%s*%d+/%d+%s+Sp:%s*%-?%d+/%d+%s+Ep:%s*%d+/%d+",
+    -- The short tick prompt (nothing after Ep). It can land between a
+    -- command and its output (swimming: "You are in deep water...", short
+    -- prompt, then the room block), so once a full prompt has been seen a
+    -- segment ending at it is "soft" and closes no command.
+    shortPrompt = "^Hp:%s*%d+/%d+%s+Sp:%s*%-?%d+/%d+%s+Ep:%s*%d+/%d+%s*$",
 
     -- Exits grammar (docs/output-format.md "Exits grammar"). The solo
     -- pattern is lazy so the trailing period is not captured.

@@ -102,11 +102,13 @@ local function scan(buf)
     return lo
 end
 
--- Raises rmap.onRoom per room, then rmap.onSegment(n) with the count of
+-- Raises rmap.onRoom per room, then rmap.onSegment(n, soft) with the count of
 -- non-noise lines, so the tracker can close commands that print no room.
 -- keepTail: on a forced flush keep the unscanned tail so a room whose
 -- title is already buffered is not split from its exits line.
-local function flush(keepTail)
+-- soft: the segment ended at a short tick prompt, so it may be only the
+-- first half of a command's reply (see settings.shortPrompt).
+local function flush(keepTail, soft)
     local buf = rmap.cap.buf
     rmap.cap.buf = {}
     local lo = scan(buf)
@@ -119,14 +121,20 @@ local function flush(keepTail)
     for i = 1, #buf do
         if not isNoise(buf[i]) then n = n + 1 end
     end
-    raiseEvent("rmap.onSegment", n)
+    raiseEvent("rmap.onSegment", n, soft)
 end
 
 function rmap.onLine(line)
     local c = rmap.cap
     if isPrompt() or line:find(rmap.settings.promptPattern) then
         c.warned = false
-        flush()
+        local soft = false
+        if line:find(rmap.settings.shortPrompt) then
+            soft = c.tall                    -- a tick prompt, not a reply
+        else
+            c.tall = true
+        end
+        flush(false, soft)
         return
     end
     -- a reconnect banner (login art) is never part of a room

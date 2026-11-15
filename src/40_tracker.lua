@@ -129,11 +129,14 @@ end
 -- fail message already resolved the head, the head command is done.
 -- An ADVANCE head is the exception: its ack is the room block or the
 -- fail line, so unrelated chatter before it must not close it (timeout
--- covers a move that prints neither).
-function T.onSegment(_, n)
+-- covers a move that prints neither). A soft segment (ended by a short
+-- tick prompt) closes nothing: swimming prints "You are in deep water..."
+-- and a short prompt before the room block.
+function T.onSegment(_, n, soft)
     expire()
     local e, head = nil, T.q[1]
-    if not T.handled and n > 0 and head and head.kind ~= "ADVANCE" then
+    if not T.handled and not soft and n > 0 and head
+        and head.kind ~= "ADVANCE" then
         e = table.remove(T.q, 1)
     end
     T.handled = false

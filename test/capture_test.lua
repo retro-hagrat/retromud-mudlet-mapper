@@ -25,11 +25,23 @@ for _, p in ipairs({
 }) do
     local t = {}
     for i, l in ipairs(ROOM) do t[i] = l end
+    rmap.cap.tall = nil
     feed(t)
     assert(#rooms == 0, "room emitted before prompt")
     rmap.onLine(p)
     assert(#rooms == 1 and rooms[1].name == "Orange Tsoda Pool", p)
 end
+-- once a full prompt was seen, a segment ended by a short tick prompt is
+-- soft (swimming: message, short prompt, then the room block)
+local soft
+registerAnonymousEventHandler("rmap.onSegment", function(_, n, sf) soft = sf end)
+rmap.cap.tall = true
+feed({ "You are in deep water and start swimming.",
+    "Hp: 296/296  Sp: 102/102  Ep: 72/74" })
+assert(soft == true, "short prompt after a full one must be soft")
+rmap.onLine("Hp: 296/296 Sp: 102/102 Ep: 74/74 Gold: 0 Exp: 48 >")
+assert(not soft, "full prompt is not soft")
+rmap.cap.tall = nil
 -- combat round line (uppercase) is not a prompt
 feed({ "--- HP:296/296  SP:102/102  EP:74/74" })
 assert(#rmap.cap.buf == 1)

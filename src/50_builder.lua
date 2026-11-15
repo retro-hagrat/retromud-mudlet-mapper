@@ -151,6 +151,23 @@ local function near(from, fp, opp)
     return hit
 end
 
+-- The way back to a new room is linked on the strength of its exits line
+-- alone. The game need not honour it (a swimming current only runs one
+-- way), so such links are listed in user data "bl" on the room they leave
+-- until a real step along them is seen.
+local function inferred(id, dir)
+    return (" " .. getRoomUserData(id, "bl") .. " "):find(" " .. dir .. " ", 1, true)
+end
+
+local function setInferred(id, dir, on)
+    local list = {}
+    for d in getRoomUserData(id, "bl"):gmatch("%S+") do
+        if d ~= dir then list[#list + 1] = d end
+    end
+    if on then list[#list + 1] = dir end
+    setRoomUserData(id, "bl", table.concat(list, " "))
+end
+
 -- peer: a `peer` preview from `from` (rmap scan): new rooms are stubs and
 -- the way back is left as a soft exit stub, never a real link.
 function B.advance(from, dir, b, peer)
@@ -160,11 +177,21 @@ function B.advance(from, dir, b, peer)
     -- a different room there means the map does not fit the grid, so
     -- ignore it (links, not cells, are the truth).
     if to and not linked and B.fp(to) ~= b.fingerprint then to = nil end
+    -- an inferred way back that led somewhere else was wrong: drop it
+    if to and linked and B.fp(to) ~= b.fingerprint and not peer
+        and inferred(from, dir) then
+        setExit(from, -1, d.num)
+        setExitStub(from, d.num, true)
+        to = nil
+    end
     to = to or near(from, b.fingerprint, d.opp)
     if to then
         if B.fp(to) ~= b.fingerprint then return nil end
         link(from, to, dir)
-        if not peer then confirm(to) end
+        if not peer then
+            confirm(to)
+            setInferred(from, dir, false)
+        end
         return to
     end
     local x, y, z = getRoomCoordinates(from)
@@ -174,7 +201,10 @@ function B.advance(from, dir, b, peer)
     B.created[#B.created + 1] = { id = to, from = from, dir = dir }
     link(from, to, dir)
     for _, ex in ipairs(b.exits) do
-        if ex == d.opp and not peer then link(to, from, d.opp) end
+        if ex == d.opp and not peer then
+            link(to, from, d.opp)
+            setInferred(to, d.opp, true)
+        end
     end
     stub(to, b)
     return to

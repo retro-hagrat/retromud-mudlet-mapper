@@ -112,7 +112,10 @@ All three are GA-terminated prompts:
   between an echoed command and its output (`>peer away`, then this line, then
   `You peer away.`). Confirmed a real prompt (GA follows), so it **does** end
   a segment. Earlier drafts of this spec called it a status refresh; that was
-  wrong.
+  wrong. It can also land *between* a command and its room block (swimming:
+  `You are in deep water...`, short prompt, then the room), so once a full
+  prompt has been seen a segment ending at it is *soft*: it closes no
+  command in the tracker (`rmap.onSegment(n, soft)`).
 
 Multi-line prompts: GA follows the **last** line of the prompt, so
 `isPrompt()` is true only there; the earlier lines arrive as ordinary-looking

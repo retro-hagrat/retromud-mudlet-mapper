@@ -15,6 +15,7 @@ function rmap.commands.help()
         { "rmap where", "re-sync position from the room you are in" },
         { "rmap scan", "peer every exit of this room and map the stubs" },
         { "rmap undo", "remove the last auto-created room" },
+        { "rmap area [name]", "show or set the area new rooms go into" },
     }) do
         rmap.out(string.format("  <cyan>%-16s<reset>%s", c[1], c[2]), "markup")
     end
@@ -146,6 +147,12 @@ function rmap.commands.scan()
     end)
 end
 
+-- Area names are session-only (not persisted); set it before mapping.
+function rmap.commands.area(name)
+    if name and name ~= "" then rmap.settings.areaName = name end
+    rmap.out("area: " .. rmap.settings.areaName, "ok")
+end
+
 function rmap.commands.undo()
     local e = B.undo()
     if not e then return rmap.out("undo: nothing to undo", "skip") end
@@ -154,11 +161,11 @@ function rmap.commands.undo()
 end
 
 function rmap.command(arg)
-    local cmd = arg:match("^%s*(%S*)")
+    local cmd, rest = arg:match("^%s*(%S*)%s*(.-)%s*$")
     if cmd == "" then cmd = "help" end
     local fn = rmap.commands[cmd]
     if fn then
-        fn()
+        fn(rest)
     else
         rmap.out("unknown command '" .. cmd .. "'. Try 'rmap help'.", "err")
     end

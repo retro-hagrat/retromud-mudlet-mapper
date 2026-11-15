@@ -19,7 +19,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud"
-rmap.version = "0.0.4"
+rmap.version = "0.0.6"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
@@ -100,6 +100,11 @@ rmap.settings = {
     -- docs/output-format.md "Prompt patterns".
     -- Allows an "EQ Tick: " style prefix and a negative Sp.
     promptPattern = "^[%w ]*:? *Hp:%s*%d+/%d+%s+Sp:%s*%-?%d+/%d+%s+Ep:%s*%d+/%d+",
+    -- The short tick prompt (nothing after Ep). It can land between a
+    -- command and its output (swimming: "You are in deep water...", short
+    -- prompt, then the room block), so once a full prompt has been seen a
+    -- segment ending at it is "soft" and closes no command.
+    shortPrompt = "^Hp:%s*%d+/%d+%s+Sp:%s*%-?%d+/%d+%s+Ep:%s*%d+/%d+%s*$",
 
     -- Exits grammar (docs/output-format.md "Exits grammar"). The solo
     -- pattern is lazy so the trailing period is not captured.
@@ -262,11 +267,13 @@ local function scan(buf)
     return lo
 end
 
--- Raises rmap.onRoom per room, then rmap.onSegment(n) with the count of
+-- Raises rmap.onRoom per room, then rmap.onSegment(n, soft) with the count of
 -- non-noise lines, so the tracker can close commands that print no room.
 -- keepTail: on a forced flush keep the unscanned tail so a room whose
 -- title is already buffered is not split from its exits line.
-local function flush(keepTail)
+-- soft: the segment ended at a short tick prompt, so it may be only the
+-- first half of a command's reply (see settings.shortPrompt).
+local function flush(keepTail, soft)
     local buf = rmap.cap.buf
     rmap.cap.buf = {}
     local lo = scan(buf)
@@ -279,14 +286,20 @@ local function flush(keepTail)
     for i = 1, #buf do
         if not isNoise(buf[i]) then n = n + 1 end
     end
-    raiseEvent("rmap.onSegment", n)
+    raiseEvent("rmap.onSegment", n, soft)
 end
 
 function rmap.onLine(line)
     local c = rmap.cap
     if isPrompt() or line:find(rmap.settings.promptPattern) then
         c.warned = false
-        flush()
+        local soft = false
+        if line:find(rmap.settings.shortPrompt) then
+            soft = c.tall                    -- a tick prompt, not a reply
+        else
+            c.tall = true
+        end
+        flush(false, soft)
         return
     end
     -- a reconnect banner (login art) is never part of a room
@@ -447,11 +460,14 @@ end
 -- fail message already resolved the head, the head command is done.
 -- An ADVANCE head is the exception: its ack is the room block or the
 -- fail line, so unrelated chatter before it must not close it (timeout
--- covers a move that prints neither).
-function T.onSegment(_, n)
+-- covers a move that prints neither). A soft segment (ended by a short
+-- tick prompt) closes nothing: swimming prints "You are in deep water..."
+-- and a short prompt before the room block.
+function T.onSegment(_, n, soft)
     expire()
     local e, head = nil, T.q[1]
-    if not T.handled and n &gt; 0 and head and head.kind ~= "ADVANCE" then
+    if not T.handled and not soft and n &gt; 0 and head
+        and head.kind ~= "ADVANCE" then
         e = table.remove(T.q, 1)
     end
     T.handled = false
@@ -621,6 +637,23 @@ local function near(from, fp, opp)
     return hit
 end
 
+-- The way back to a new room is linked on the strength of its exits line
+-- alone. The game need not honour it (a swimming current only runs one
+-- way), so such links are listed in user data "bl" on the room they leave
+-- until a real step along them is seen.
+local function inferred(id, dir)
+    return (" " .. getRoomUserData(id, "bl") .. " "):find(" " .. dir .. " ", 1, true)
+end
+
+local function setInferred(id, dir, on)
+    local list = {}
+    for d in getRoomUserData(id, "bl"):gmatch("%S+") do
+        if d ~= dir then list[#list + 1] = d end
+    end
+    if on then list[#list + 1] = dir end
+    setRoomUserData(id, "bl", table.concat(list, " "))
+end
+
 -- peer: a `peer` preview from `from` (rmap scan): new rooms are stubs and
 -- the way back is left as a soft exit stub, never a real link.
 function B.advance(from, dir, b, peer)
@@ -630,11 +663,21 @@ function B.advance(from, dir, b, peer)
     -- a different room there means the map does not fit the grid, so
     -- ignore it (links, not cells, are the truth).
     if to and not linked and B.fp(to) ~= b.fingerprint then to = nil end
+    -- an inferred way back that led somewhere else was wrong: drop it
+    if to and linked and B.fp(to) ~= b.fingerprint and not peer
+        and inferred(from, dir) then
+        setExit(from, -1, d.num)
+        setExitStub(from, d.num, true)
+        to = nil
+    end
     to = to or near(from, b.fingerprint, d.opp)
     if to then
         if B.fp(to) ~= b.fingerprint then return nil end
         link(from, to, dir)
-        if not peer then confirm(to) end
+        if not peer then
+            confirm(to)
+            setInferred(from, dir, false)
+        end
         return to
     end
     local x, y, z = getRoomCoordinates(from)
@@ -644,7 +687,10 @@ function B.advance(from, dir, b, peer)
     B.created[#B.created + 1] = { id = to, from = from, dir = dir }
     link(from, to, dir)
     for _, ex in ipairs(b.exits) do
-        if ex == d.opp and not peer then link(to, from, d.opp) end
+        if ex == d.opp and not peer then
+            link(to, from, d.opp)
+            setInferred(to, d.opp, true)
+        end
     end
     stub(to, b)
     return to
@@ -783,6 +829,7 @@ function rmap.commands.help()
         { "rmap where", "re-sync position from the room you are in" },
         { "rmap scan", "peer every exit of this room and map the stubs" },
         { "rmap undo", "remove the last auto-created room" },
+        { "rmap area [name]", "show or set the area new rooms go into" },
     }) do
         rmap.out(string.format("  &lt;cyan&gt;%-16s&lt;reset&gt;%s", c[1], c[2]), "markup")
     end
@@ -914,6 +961,12 @@ function rmap.commands.scan()
     end)
 end
 
+-- Area names are session-only (not persisted); set it before mapping.
+function rmap.commands.area(name)
+    if name and name ~= "" then rmap.settings.areaName = name end
+    rmap.out("area: " .. rmap.settings.areaName, "ok")
+end
+
 function rmap.commands.undo()
     local e = B.undo()
     if not e then return rmap.out("undo: nothing to undo", "skip") end
@@ -922,11 +975,11 @@ function rmap.commands.undo()
 end
 
 function rmap.command(arg)
-    local cmd = arg:match("^%s*(%S*)")
+    local cmd, rest = arg:match("^%s*(%S*)%s*(.-)%s*$")
     if cmd == "" then cmd = "help" end
     local fn = rmap.commands[cmd]
     if fn then
-        fn()
+        fn(rest)
     else
         rmap.out("unknown command '" .. cmd .. "'. Try 'rmap help'.", "err")
     end

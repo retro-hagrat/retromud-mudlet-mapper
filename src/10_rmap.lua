@@ -12,7 +12,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud"
-rmap.version = "0.0.4"
+rmap.version = "0.0.6"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
