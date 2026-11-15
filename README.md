@@ -2,8 +2,6 @@
 
 A shareable Mudlet package providing a trigger-based auto-mapper for RetroMUD (www.retromud.org).
 
-![The Wood theme: chat window, live map of the Tsoda Pools, status bars and buttons](docs/images/wood-theme.png)
-
 RetroMUD does not support GMCP, so all room detection is text-trigger based.
 The package is being developed in this repository as readable, testable Lua and
 built into one self-contained `.mpackage` for distribution.
