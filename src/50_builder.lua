@@ -234,6 +234,14 @@ function B.special(from, cmd, b, peer)
     return to
 end
 
+-- Read-only B.advance/B.special for when mapping is off: a known link
+-- (cardinal or special) or a unique fingerprint match, nothing written.
+function B.follow(from, key, b)
+    local to = getRoomExits(from)[key] or getSpecialExitsSwap(from)[key]
+    if to and B.fp(to) == b.fingerprint then return to end
+    return B.find(b.fingerprint)
+end
+
 -- Orphan room for an explicit sync (`rmap where`); reuses a unique match.
 function B.adopt(b)
     local to = B.find(b.fingerprint)

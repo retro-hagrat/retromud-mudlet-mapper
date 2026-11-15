@@ -89,6 +89,7 @@ local function fresh()
     S.install()
     S.load(body)
     S.fire("sysLoadEvent")
+    rmap.mapping = true
 end
 local function send(c) S.raiseEvent("sysDataSendRequest", c) end
 local function exitsLine(ex)
@@ -331,6 +332,7 @@ print("swim ok")
 -- ===== one-way exit: an inferred way back that the game does not honour =====
 do
     S.reset() S.install() S.load(body) S.fire("sysLoadEvent")
+    rmap.mapping = true
     local function pr() S.prompt = true rmap.onLine("Hp: 1/1 Sp: 1/1 Ep: 1/1 Gold: 0 Exp: 1 >") S.prompt = false end
     local function sendcmd(c) S.raiseEvent("sysDataSendRequest", c) end
     local function room(name, exits)
@@ -348,3 +350,31 @@ do
     assert(S.map.rooms[b].exits.southeast == c, "link corrected to C")
 end
 print("one-way ok")
+
+-- ===== review fixes (v0.0.7) =====
+-- mapping off: walking into an unknown room writes nothing, but a known
+-- link still moves us
+fresh(); start("A", { "east" })
+go("e", "B", { "west" })
+go("w", "A", { "east" })
+rmap.mapping = false
+go("e", "B", { "west" })
+assert(rmap.track.pos == one("B") and S.roomCount() == 2, "known link followed")
+go("w", "A", { "east" })
+local before = S.roomCount()
+S.map.rooms[one("A")].exits.east = nil               -- link gone: unknown ahead
+go("e", "C", { "west" })
+assert(S.roomCount() == before and rmap.track.pos == nil, "created while mapping off")
+rmap.mapping = true
+
+-- a move that expires must not let its late reply link from the old room
+fresh(); start("A", { "east", "north" })
+local clock = 100
+rmap.now = function() return clock end
+send("n")                                            -- slow northbound reply
+clock = clock + rmap.settings.expectTimeout + 5
+send("e")                                            -- expires n, drops it
+assert(rmap.track.pos == nil, "position kept after expired move")
+show("N", { "south" })                               -- late reply to n
+assert(S.map.rooms[one("A")].exits.east == nil, "late reply made an east exit")
+print("review fixes ok")

@@ -63,6 +63,7 @@ local function fresh(w, start)
     S.install()
     S.load(body)
     S.fire("sysLoadEvent")
+    rmap.mapping = true
     world, cur, answered = w, start, 0
 end
 local function walk(cmd) send(cmd) pump() end
@@ -199,6 +200,7 @@ end
 assert(rmap.track.pos == p2id, "disambiguated")
 -- no match: honest report, nothing created; mapping on adopts
 fresh({ n = room("Nowhere", { north = "n" }) }, "n")
+rmap.mapping = false
 run("rmap where")
 assert(S.roomCount() == 0 and rmap.track.pos == nil and rmap.job == nil)
 assert(said():find("no match", 1, true))

@@ -12,7 +12,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud"
-rmap.version = "0.0.6"
+rmap.version = "0.0.7"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
@@ -363,7 +363,12 @@ local function expire()
     local cutoff = rmap.now() - rmap.settings.expectTimeout
     local dead = {}
     while T.q[1] and T.q[1].t < cutoff do
-        dead[#dead + 1] = table.remove(T.q, 1)
+        local e = table.remove(T.q, 1)
+        dead[#dead + 1] = e
+        -- a move we never saw land leaves us unsure where we are; a late
+        -- reply must not be linked from the old room (it re-syncs by
+        -- unique fingerprint instead)
+        if e.kind == "ADVANCE" or e.kind == "MAYBE_MOVE" then T.pos = nil end
     end
     for i = 1, #dead do done(dead[i], nil, "timeout") end
 end
@@ -412,17 +417,20 @@ end
 local function resolve(e, b)
     if e.kind == "PREVIEW" then return end
     local cur = T.pos
+    -- mapping off: follow what is already mapped, never write the graph
+    local move = rmap.mapping and rmap.build or { advance = rmap.build.follow,
+        special = rmap.build.follow }
     if not cur then
         -- never guess: only a unique fingerprint match re-syncs
         T.pos = rmap.build.find(b.fingerprint)
     elseif e.kind == "ADVANCE" then
-        T.pos = rmap.build.advance(cur, e.dir, b)
+        T.pos = move.advance(cur, e.dir, b)
     elseif rmap.build.fp(cur) == b.fingerprint then    -- VERIFY / no move
         return
     elseif e.kind == "VERIFY" then
         T.pos = rmap.build.find(b.fingerprint)
     else
-        T.pos = rmap.build.special(cur, e.cmd, b)
+        T.pos = move.special(cur, e.cmd, b)
     end
 end
 
@@ -711,6 +719,14 @@ function B.special(from, cmd, b, peer)
     end
     addSpecialExit(from, to, cmd)
     return to
+end
+
+-- Read-only B.advance/B.special for when mapping is off: a known link
+-- (cardinal or special) or a unique fingerprint match, nothing written.
+function B.follow(from, key, b)
+    local to = getRoomExits(from)[key] or getSpecialExitsSwap(from)[key]
+    if to and B.fp(to) == b.fingerprint then return to end
+    return B.find(b.fingerprint)
 end
 
 -- Orphan room for an explicit sync (`rmap where`); reuses a unique match.

@@ -15,6 +15,7 @@ local function run(body, capture, expect)
     S.install()
     S.load(body)
     S.fire("sysLoadEvent")
+    rmap.mapping = true
     local sends, nextSend = {}, 1
     for l in io.lines(expect or "/dev/null") do
         local c = l:match("^SEND|(.*)$")
