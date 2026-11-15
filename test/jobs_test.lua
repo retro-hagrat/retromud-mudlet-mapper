@@ -225,6 +225,32 @@ local a2, b2 = one("A"), one("B")
 assert(S.map.rooms[b2].exits.north == nil and S.map.rooms[a2].exits.north == nil,
     "preview from the new room attached to the old one")
 
+-- scan writes rooms, so it refuses while mapping is off
+fresh({ a = room("A", { east = "b" }), b = room("B", { west = "a" }) }, "a")
+adopt(); rmap.mapping = false
+local n0 = #S.sent
+assert(S.alias("rmap scan")); pump()
+assert(#S.sent == n0 and S.roomCount() == 1 and rmap.job == nil
+    and said():find("rmap start", 1, true), "scan ran with mapping off")
+
+-- the player moves while `rmap where` peers: it must not sync from stale
+-- previews, and a scan waiting on that where must not start afterwards
+local twin = { a = room("Twin", { east = "x" }), b = room("Twin", { east = "y" }),
+    x = room("X", { west = "a" }), y = room("Y", { west = "b" }) }
+twin.a.nb.east = "x" twin.b.nb.east = "y"
+fresh(twin, "a"); adopt()
+local ra = one("Twin")
+rmap.track.pos = nil                                -- lost: scan must where first
+setRoomUserData(ra, "fp", "Twin|east")
+local rb = createRoomID(); addRoom(rb); setRoomArea(rb, S.map.rooms[ra].area)
+setRoomCoordinates(rb, 9, 9, 0); setRoomUserData(rb, "fp", "Twin|east")
+assert(S.alias("rmap scan"))
+answered = 1; respond(S.sent[1])                    -- look: two twins, peer sent
+send("e"); pump()
+local scanSent = 0
+for _, c in ipairs(S.sent) do if c == "look" then scanSent = scanSent + 1 end end
+assert(scanSent == 1 and rmap.job == nil, "scan restarted after a cancelled where")
+
 -- ===== undo =====
 local gw = { a = room("A", { east = "b" }), b = room("B", { east = "c", west = "a" }),
     c = room("C", { west = "b", gate = "h" }), h = room("Hill", { leave = "c" }) }

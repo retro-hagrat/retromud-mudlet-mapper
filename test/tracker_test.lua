@@ -378,3 +378,13 @@ assert(rmap.track.pos == nil, "position kept after expired move")
 show("N", { "south" })                               -- late reply to n
 assert(S.map.rooms[one("A")].exits.east == nil, "late reply made an east exit")
 print("review fixes ok")
+
+-- an unrecognised verb that prints nothing is not a lost move
+fresh(); start("A", { "east" })
+local clock2 = 100
+rmap.now = function() return clock2 end
+send("get gold")
+clock2 = clock2 + rmap.settings.expectTimeout + 5
+send("look")
+assert(rmap.track.pos == one("A"), "get gold desynced the tracker")
+print("expiry scope ok")

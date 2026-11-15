@@ -45,6 +45,7 @@ local function narrow(c, b, i, done)
     local ex = b.exits[i]
     if not ex then return done(nil) end
     T.exec("peer " .. ex, function(pb)
+        if not rmap.job then return end                  -- cancelled
         if pb then
             local keep = {}
             for _, id in ipairs(c) do
@@ -63,6 +64,7 @@ end
 -- by peering; none -> report (or adopt when mapping). cb(ok) when done.
 local function where(cb)
     T.exec("look", function(b)
+        if not rmap.job then return end                  -- cancelled
         if not b then return finish("where: no room seen", cb, false) end
         local c = B.candidates(b.fingerprint)
         if #c == 1 then
@@ -95,6 +97,9 @@ end
 -- rmap scan: peer every exit that is not already linked to a real room.
 function rmap.commands.scan()
     if not rmap.canRun() then return end
+    if not rmap.mapping then
+        return rmap.out("scan writes rooms: type 'rmap start' first", "skip")
+    end
     rmap.job = "scan"
     local function scan()
         T.exec("look", function(b)
@@ -125,7 +130,9 @@ function rmap.commands.scan()
                     return nextExit()
                 end
                 T.exec("peer " .. ex, function(pb)
-                    if rmap.job ~= "scan" or T.pos ~= cur then return end
+                    if rmap.job ~= "scan" or not rmap.mapping or T.pos ~= cur then
+                        return
+                    end
                     if pb then
                         local n = #B.created
                         if rmap.settings.dirs[ex] then

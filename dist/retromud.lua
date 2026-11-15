@@ -12,7 +12,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud"
-rmap.version = "0.0.8"
+rmap.version = "0.0.9"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
@@ -365,10 +365,11 @@ local function expire()
     while T.q[1] and T.q[1].t < cutoff do
         local e = table.remove(T.q, 1)
         dead[#dead + 1] = e
-        -- a move we never saw land leaves us unsure where we are; a late
+        -- a step we never saw land leaves us unsure where we are; a late
         -- reply must not be linked from the old room (it re-syncs by
-        -- unique fingerprint instead)
-        if e.kind == "ADVANCE" or e.kind == "MAYBE_MOVE" then T.pos = nil end
+        -- unique fingerprint instead). Only directions: an unrecognised
+        -- verb that printed nothing ("get gold") is not a lost move.
+        if e.kind == "ADVANCE" then T.pos = nil end
     end
     for i = 1, #dead do done(dead[i], nil, "timeout") end
 end
@@ -385,12 +386,12 @@ function T.send(_, cmd)
     for raw in (tostring(cmd) .. "\n"):gmatch("(.-)\r?\n") do
         local part = raw:lower():match("^%s*(.-)%s*$")
         if part ~= "" then
-            -- the player moved on mid-scan: later previews would come
-            -- from another room, so the scan stops here (its callbacks
-            -- see rmap.job ~= "scan" and drop out)
-            if not T.hook and rmap.job == "scan" then
+            -- the player moved on mid-scan/where: later previews would come
+            -- from another room, so the job stops here (its callbacks
+            -- see rmap.job == nil and drop out)
+            if not T.hook and (rmap.job == "scan" or rmap.job == "where") then
+                rmap.out(rmap.job .. ": stopped, you sent a command", "skip")
                 rmap.job = nil
-                rmap.out("scan: stopped, you sent a command", "skip")
             end
             expire()
             local kind, dir = classify(part)
@@ -875,6 +876,7 @@ local function narrow(c, b, i, done)
     local ex = b.exits[i]
     if not ex then return done(nil) end
     T.exec("peer " .. ex, function(pb)
+        if not rmap.job then return end                  -- cancelled
         if pb then
             local keep = {}
             for _, id in ipairs(c) do
@@ -893,6 +895,7 @@ end
 -- by peering; none -> report (or adopt when mapping). cb(ok) when done.
 local function where(cb)
     T.exec("look", function(b)
+        if not rmap.job then return end                  -- cancelled
         if not b then return finish("where: no room seen", cb, false) end
         local c = B.candidates(b.fingerprint)
         if #c == 1 then
@@ -925,6 +928,9 @@ end
 -- rmap scan: peer every exit that is not already linked to a real room.
 function rmap.commands.scan()
     if not rmap.canRun() then return end
+    if not rmap.mapping then
+        return rmap.out("scan writes rooms: type 'rmap start' first", "skip")
+    end
     rmap.job = "scan"
     local function scan()
         T.exec("look", function(b)
@@ -955,7 +961,9 @@ function rmap.commands.scan()
                     return nextExit()
                 end
                 T.exec("peer " .. ex, function(pb)
-                    if rmap.job ~= "scan" or T.pos ~= cur then return end
+                    if rmap.job ~= "scan" or not rmap.mapping or T.pos ~= cur then
+                        return
+                    end
                     if pb then
                         local n = #B.created
                         if rmap.settings.dirs[ex] then

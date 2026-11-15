@@ -41,10 +41,11 @@ local function expire()
     while T.q[1] and T.q[1].t < cutoff do
         local e = table.remove(T.q, 1)
         dead[#dead + 1] = e
-        -- a move we never saw land leaves us unsure where we are; a late
+        -- a step we never saw land leaves us unsure where we are; a late
         -- reply must not be linked from the old room (it re-syncs by
-        -- unique fingerprint instead)
-        if e.kind == "ADVANCE" or e.kind == "MAYBE_MOVE" then T.pos = nil end
+        -- unique fingerprint instead). Only directions: an unrecognised
+        -- verb that printed nothing ("get gold") is not a lost move.
+        if e.kind == "ADVANCE" then T.pos = nil end
     end
     for i = 1, #dead do done(dead[i], nil, "timeout") end
 end
@@ -61,12 +62,12 @@ function T.send(_, cmd)
     for raw in (tostring(cmd) .. "\n"):gmatch("(.-)\r?\n") do
         local part = raw:lower():match("^%s*(.-)%s*$")
         if part ~= "" then
-            -- the player moved on mid-scan: later previews would come
-            -- from another room, so the scan stops here (its callbacks
-            -- see rmap.job ~= "scan" and drop out)
-            if not T.hook and rmap.job == "scan" then
+            -- the player moved on mid-scan/where: later previews would come
+            -- from another room, so the job stops here (its callbacks
+            -- see rmap.job == nil and drop out)
+            if not T.hook and (rmap.job == "scan" or rmap.job == "where") then
+                rmap.out(rmap.job .. ": stopped, you sent a command", "skip")
                 rmap.job = nil
-                rmap.out("scan: stopped, you sent a command", "skip")
             end
             expire()
             local kind, dir = classify(part)
