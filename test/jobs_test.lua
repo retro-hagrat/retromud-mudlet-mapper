@@ -379,4 +379,30 @@ adopt(); rmap.commands.scan()
 answered = answered + 1; respond(S.sent[answered])      -- look -> sends peer
 rmap.commands.stop(); pump()
 assert(rmap.job == nil and said():find("scan: stopped", 1, true), "scan job stuck")
+-- a refused move along an inferred return link removes it (one-way current)
+fresh({ A = room("Pool", { north = "B" }), B = room("Current", { south = "A" }) }, "A")
+adopt(); world.block = "s"
+walk("n")
+local bId, bRoom = one("Current")
+assert(bRoom.exits.south and not bRoom.stubs.south, "inferred return link made")
+walk("s")
+assert(bRoom.exits.south == nil and bRoom.stubs.south, "rejected link not removed")
+assert(not rmap.build.candidates or bRoom.ud.bl == "", "marker not cleared: " .. tostring(bRoom.ud.bl))
+-- a link confirmed by a real step survives a later refusal
+world.block = nil
+walk("s"); walk("n"); walk("s")
+assert(S.map.rooms[one("Pool")].exits.north == bId)
+-- an interrupted scan must not resume when a new scan starts
+fresh({ A = room("Hub", { north = "N", east = "E" }), N = room("North", { south = "A" }),
+    E = room("East", { west = "A" }) }, "A")
+adopt(); rmap.commands.scan()               -- sends look, unanswered
+send("emote waves")                         -- player acts: scan stops
+assert(rmap.job == nil)
+rmap.commands.scan()                        -- new scan before the old reply
+local before = #S.sent
+pump()
+assert(rmap.job == nil, "scan left running")
+local peers = 0
+for i = before, #S.sent do if S.sent[i]:find("^peer ") then peers = peers + 1 end end
+assert(peers == 2, "old scan resumed: " .. peers .. " peers: " .. table.concat(S.sent, ";"))
 print("jobs_test ok")

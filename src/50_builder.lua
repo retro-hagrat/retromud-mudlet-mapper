@@ -168,6 +168,16 @@ local function setInferred(id, dir, on)
     setRoomUserData(id, "bl", table.concat(list, " "))
 end
 
+-- The move along `dir` from `from` was refused: if that link was only
+-- inferred from an exits line, remove it and turn it back into a stub.
+function B.reject(from, dir)
+    local d = rmap.settings.dirs[dir]
+    if not (d and inferred(from, dir) and getRoomExits(from)[dir]) then return end
+    setExit(from, -1, d.num)
+    setExitStub(from, d.num, true)
+    setInferred(from, dir, false)
+end
+
 -- peer: a `peer` preview from `from` (rmap scan): new rooms are stubs and
 -- the way back is left as a soft exit stub, never a real link.
 function B.advance(from, dir, b, peer)

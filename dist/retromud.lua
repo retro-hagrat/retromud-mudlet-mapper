@@ -12,7 +12,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud"
-rmap.version = "0.0.10"
+rmap.version = "0.0.11"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
@@ -462,7 +462,11 @@ end
 function T.onMoveFail()
     expire()
     T.handled = true
-    done(table.remove(T.q, 1), nil, "fail")
+    local e = table.remove(T.q, 1)
+    if e and e.kind == "ADVANCE" and T.pos and rmap.mapping then
+        rmap.build.reject(T.pos, e.dir)
+    end
+    done(e, nil, "fail")
 end
 
 -- A prompt closed a segment with n real lines. If no room block and no
@@ -663,6 +667,16 @@ local function setInferred(id, dir, on)
     setRoomUserData(id, "bl", table.concat(list, " "))
 end
 
+-- The move along `dir` from `from` was refused: if that link was only
+-- inferred from an exits line, remove it and turn it back into a stub.
+function B.reject(from, dir)
+    local d = rmap.settings.dirs[dir]
+    if not (d and inferred(from, dir) and getRoomExits(from)[dir]) then return end
+    setExit(from, -1, d.num)
+    setExitStub(from, d.num, true)
+    setInferred(from, dir, false)
+end
+
 -- peer: a `peer` preview from `from` (rmap scan): new rooms are stubs and
 -- the way back is left as a soft exit stub, never a real link.
 function B.advance(from, dir, b, peer)
@@ -860,6 +874,15 @@ local T, B = rmap.track, rmap.build
 function rmap.commands.start() rmap.mapping = true rmap.out("mapping on", "ok") end
 function rmap.commands.stop() rmap.mapping = false rmap.out("mapping off", "ok") end
 
+-- Every where/scan run gets a fresh id; its callbacks drop out once the
+-- job was cancelled or replaced, so a late reply never revives it.
+local function startJob(name)
+    rmap.job = name
+    rmap.jobId = (rmap.jobId or 0) + 1
+    return rmap.jobId
+end
+local function live(id) return rmap.job ~= nil and rmap.jobId == id end
+
 local function finish(msg, cb, ok)
     rmap.job = nil
     T.focus()
@@ -874,12 +897,12 @@ end
 
 -- Peer each exit of `b` and drop candidate rooms whose known neighbour
 -- through that exit has another fingerprint. Calls done(room or nil).
-local function narrow(c, b, i, done)
+local function narrow(c, b, i, id, done)
     if #c <= 1 then return done(c[1]) end
     local ex = b.exits[i]
     if not ex then return done(nil) end
     T.exec("peer " .. ex, function(pb)
-        if not rmap.job then return end                  -- cancelled
+        if not live(id) then return end                  -- cancelled
         if pb then
             local keep = {}
             for _, id in ipairs(c) do
@@ -890,15 +913,16 @@ local function narrow(c, b, i, done)
             end
             c = keep
         end
-        narrow(c, b, i + 1, done)
+        narrow(c, b, i + 1, id, done)
     end)
 end
 
 -- rmap where: look; unique fingerprint -> synced; several -> disambiguate
 -- by peering; none -> report (or adopt when mapping). cb(ok) when done.
 local function where(cb)
+    local id = rmap.jobId
     T.exec("look", function(b)
-        if not rmap.job then return end                  -- cancelled
+        if not live(id) then return end                  -- cancelled
         if not b then return finish("where: no room seen", cb, false) end
         local c = B.candidates(b.fingerprint)
         if #c == 1 then
@@ -912,11 +936,11 @@ local function where(cb)
             T.adopt(b)
             return finish("where: created a new room", cb, true)
         end
-        narrow(c, b, 1, function(id)
-            if not id then
+        narrow(c, b, 1, id, function(room)
+            if not room then
                 return finish("where: could not narrow to one room", cb, false)
             end
-            T.pos = id
+            T.pos = room
             finish("where: synced", cb, true)
         end)
     end)
@@ -924,7 +948,7 @@ end
 
 function rmap.commands.where()
     if not rmap.canRun() then return end
-    rmap.job = "where"
+    startJob("where")
     where()
 end
 
@@ -934,10 +958,10 @@ function rmap.commands.scan()
     if not rmap.mapping then
         return rmap.out("scan writes rooms: type 'rmap start' first", "skip")
     end
-    rmap.job = "scan"
+    local id = startJob("scan")
     local function scan()
         T.exec("look", function(b)
-            if rmap.job ~= "scan" then return end        -- cancelled
+            if not live(id) then return end              -- cancelled
             local cur = T.pos
             if not b or not cur or B.fp(cur) ~= b.fingerprint then
                 return finish("scan: position lost", nil)
@@ -964,7 +988,7 @@ function rmap.commands.scan()
                     return nextExit()
                 end
                 T.exec("peer " .. ex, function(pb)
-                    if rmap.job ~= "scan" then return end    -- cancelled
+                    if not live(id) then return end          -- cancelled
                     if not rmap.mapping or T.pos ~= cur then
                         return finish("scan: stopped", nil)
                     end
@@ -985,6 +1009,8 @@ function rmap.commands.scan()
     end
     if T.state() ~= "UNSYNCED" then return scan() end
     where(function(ok)
+        -- where() already ended the shared job; only a newer job voids this
+        if rmap.jobId ~= id then return end
         if not ok then return finish("scan: could not sync", nil) end
         rmap.job = "scan"
         scan()

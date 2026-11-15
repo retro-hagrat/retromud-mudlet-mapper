@@ -138,7 +138,11 @@ end
 function T.onMoveFail()
     expire()
     T.handled = true
-    done(table.remove(T.q, 1), nil, "fail")
+    local e = table.remove(T.q, 1)
+    if e and e.kind == "ADVANCE" and T.pos and rmap.mapping then
+        rmap.build.reject(T.pos, e.dir)
+    end
+    done(e, nil, "fail")
 end
 
 -- A prompt closed a segment with n real lines. If no room block and no
