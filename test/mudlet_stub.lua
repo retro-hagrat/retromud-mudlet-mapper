@@ -98,6 +98,11 @@ local function installMap(g)
     g.deleteRoom = function(id)
         rec("deleteRoom", id)
         S.map.rooms[id] = nil
+        -- unverified: Mudlet also drops exits other rooms hold into it
+        for _, r in pairs(S.map.rooms) do
+            for k, v in pairs(r.exits) do if v == id then r.exits[k] = nil end end
+            for k, v in pairs(r.special) do if v == id then r.special[k] = nil end end
+        end
         return true
     end
     g.getRoomExits = function(id)
