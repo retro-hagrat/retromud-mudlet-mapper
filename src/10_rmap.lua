@@ -12,7 +12,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud"
-rmap.version = "0.0.12"
+rmap.version = "0.0.13"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
@@ -65,8 +65,10 @@ function rmap.stop()
     for i = 1, #rmap.ids.alias do killAlias(rmap.ids.alias[i]) end
     rmap.job = nil
     if rmap.ids.timer then killTimer(rmap.ids.timer) end
-    -- the one documented global exception (see 60_speedwalk)
-    if doSpeedWalk == rmap.speedwalk then doSpeedWalk = nil end
+    -- the one documented global exception (see 60_speedwalk): put back the
+    -- profile's own, but only if the global is still ours
+    if doSpeedWalk == rmap.speedwalk then doSpeedWalk = rmap.prevSpeedWalk end
+    rmap.prevSpeedWalk = nil
     rmap.ids = { handler = {}, trigger = {}, alias = {} }
     rmap.started = false
 end

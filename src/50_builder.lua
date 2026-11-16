@@ -132,10 +132,22 @@ local function reservedFor(from, dir)
     return out
 end
 
+-- Set of rooms `from` already leads to. The exit walked now is a
+-- different one, so a look-alike behind it is a different room (two
+-- exits to one look-alike become a duplicate, easy to merge by hand,
+-- rather than a false merge that breaks paths).
+local function leadsTo(from)
+    local taken = {}
+    for _, id in pairs(getRoomExits(from)) do taken[id] = true end
+    for _, id in pairs(getSpecialExitsSwap(from)) do taken[id] = true end
+    return taken
+end
+
 -- Non-Euclidean link (decision step 2): the single nearby room with this
 -- fingerprint whose way back toward us is not already linked elsewhere.
 local function near(from, fp, opp)
     local x, y, z = getRoomCoordinates(from)
+    local taken = leadsTo(from)
     local hit
     for _, id in ipairs(candidates(fp)) do
         local a, b, c = getRoomCoordinates(id)
@@ -144,7 +156,7 @@ local function near(from, fp, opp)
         -- corridor of identical rooms would fold back on itself)
         if id ~= from and getRoomArea(id) == getRoomArea(from)
             and (not back or back == from)
-            and getRoomExits(from)[opp] ~= id
+            and not taken[id]
             and math.max(math.abs(a - x), math.abs(b - y),
                 math.abs(c - z)) <= rmap.settings.maxSearchDistance then
             if hit then return nil end               -- ambiguous
@@ -233,7 +245,10 @@ function B.special(from, cmd, b, peer)
     local to = getSpecialExitsSwap(from)[cmd]
     -- a walked move may land in a known room; a preview never merges by
     -- fingerprint alone (look-alike rooms are different rooms)
-    if not to and not peer then to = B.find(b.fingerprint) end
+    if not to and not peer then
+        to = B.find(b.fingerprint)
+        if to and leadsTo(from)[to] then to = nil end
+    end
     -- a peered neighbour that looks like this room is another room, not a loop
     if to == from then to = nil end
     if to then

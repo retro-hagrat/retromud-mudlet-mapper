@@ -351,6 +351,37 @@ now = now + rmap.settings.expectTimeout + 1
 S.timers[1].fn()
 assert(rmap.job == nil and said():find("timeout", 1, true))
 
+-- a command typed mid-walk stops it: no further step is sent
+corridor()
+world.silent = true
+speedWalkDir, speedWalkPath = { "e", "e", "e" }, ids(3)
+mark = #S.sent
+doSpeedWalk(); pump()
+assert(rmap.job == "speedwalk" and #S.sent == mark + 1)
+local stale = rmap.track.q[1].cb
+send("w")
+assert(rmap.job == nil and said():find("stopped, you sent a command", 1, true))
+world.silent = nil
+pump()
+assert(#S.sent == mark + 2, "walk kept stepping after a typed command")
+
+-- a late callback of the cancelled walk must not touch a newer one
+speedWalkDir, speedWalkPath = { "e" }, ids(1)
+doSpeedWalk()
+local newId = rmap.jobId
+mark = #S.sent
+stale({}, nil)   -- cb of the cancelled walk fires late
+assert(rmap.job == "speedwalk" and rmap.jobId == newId and #S.sent == mark,
+    "stale callback disturbed the new walk")
+rmap.job = nil
+
+-- a walked freeform exit into a look-alike of a room `from` already
+-- leads to is a new room, not a merge
+fresh({ A = room("Hub", { east = "B", gate = "C" }),
+    B = room("Twin", { west = "A" }), C = room("Twin", { west = "A" }) }, "A")
+adopt(); walk("e"); walk("w"); walk("gate")
+assert(S.roomCount() == 3, "gate merged into the room east already leads to")
+
 -- ===== follow / busy refusals =====
 corridor()
 send("follow bob"); pump()
@@ -366,6 +397,20 @@ rmap.job = nil
 -- uninstall removes the global and the timer
 S.fire("sysUninstallPackage", "retromud")
 assert(doSpeedWalk == nil and #S.timers == 0)
+-- the profile's own doSpeedWalk comes back on uninstall...
+local function mine() end
+S.reset(); S.install(); doSpeedWalk = mine
+S.load(body); S.fire("sysLoadEvent")
+assert(doSpeedWalk == rmap.speedwalk)
+S.fire("sysUninstallPackage", "retromud")
+assert(doSpeedWalk == mine, "profile doSpeedWalk not restored")
+-- ...unless a package installed after us has taken the name over
+local theirs = function() end
+S.reset(); S.install(); doSpeedWalk = mine
+S.load(body); S.fire("sysLoadEvent")
+doSpeedWalk = theirs
+S.fire("sysUninstallPackage", "retromud")
+assert(doSpeedWalk == theirs, "restore stomped a later package")
 -- scan: a neighbour with this room's own fingerprint is no self-loop
 fresh({ A = room("Twin", { gate = "B" }), B = room("Twin", { gate = "A" }) }, "A")
 adopt(); run("rmap scan")

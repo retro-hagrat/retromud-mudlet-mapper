@@ -62,10 +62,10 @@ function T.send(_, cmd)
     for raw in (tostring(cmd) .. "\n"):gmatch("(.-)\r?\n") do
         local part = raw:lower():match("^%s*(.-)%s*$")
         if part ~= "" then
-            -- the player moved on mid-scan/where: later previews would come
+            -- the player moved on mid-job: later steps/previews would come
             -- from another room, so the job stops here (its callbacks
             -- see rmap.job == nil and drop out)
-            if not T.hook and (rmap.job == "scan" or rmap.job == "where") then
+            if not T.hook and rmap.job then
                 rmap.out(rmap.job .. ": stopped, you sent a command", "skip")
                 rmap.job = nil
             end

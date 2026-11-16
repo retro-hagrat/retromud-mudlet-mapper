@@ -12,7 +12,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud"
-rmap.version = "0.0.12"
+rmap.version = "0.0.13"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
@@ -65,8 +65,10 @@ function rmap.stop()
     for i = 1, #rmap.ids.alias do killAlias(rmap.ids.alias[i]) end
     rmap.job = nil
     if rmap.ids.timer then killTimer(rmap.ids.timer) end
-    -- the one documented global exception (see 60_speedwalk)
-    if doSpeedWalk == rmap.speedwalk then doSpeedWalk = nil end
+    -- the one documented global exception (see 60_speedwalk): put back the
+    -- profile's own, but only if the global is still ours
+    if doSpeedWalk == rmap.speedwalk then doSpeedWalk = rmap.prevSpeedWalk end
+    rmap.prevSpeedWalk = nil
     rmap.ids = { handler = {}, trigger = {}, alias = {} }
     rmap.started = false
 end
@@ -386,10 +388,10 @@ function T.send(_, cmd)
     for raw in (tostring(cmd) .. "\n"):gmatch("(.-)\r?\n") do
         local part = raw:lower():match("^%s*(.-)%s*$")
         if part ~= "" then
-            -- the player moved on mid-scan/where: later previews would come
+            -- the player moved on mid-job: later steps/previews would come
             -- from another room, so the job stops here (its callbacks
             -- see rmap.job == nil and drop out)
-            if not T.hook and (rmap.job == "scan" or rmap.job == "where") then
+            if not T.hook and rmap.job then
                 rmap.out(rmap.job .. ": stopped, you sent a command", "skip")
                 rmap.job = nil
             end
@@ -637,10 +639,22 @@ local function reservedFor(from, dir)
     return out
 end
 
+-- Set of rooms `from` already leads to. The exit walked now is a
+-- different one, so a look-alike behind it is a different room (two
+-- exits to one look-alike become a duplicate, easy to merge by hand,
+-- rather than a false merge that breaks paths).
+local function leadsTo(from)
+    local taken = {}
+    for _, id in pairs(getRoomExits(from)) do taken[id] = true end
+    for _, id in pairs(getSpecialExitsSwap(from)) do taken[id] = true end
+    return taken
+end
+
 -- Non-Euclidean link (decision step 2): the single nearby room with this
 -- fingerprint whose way back toward us is not already linked elsewhere.
 local function near(from, fp, opp)
     local x, y, z = getRoomCoordinates(from)
+    local taken = leadsTo(from)
     local hit
     for _, id in ipairs(candidates(fp)) do
         local a, b, c = getRoomCoordinates(id)
@@ -649,7 +663,7 @@ local function near(from, fp, opp)
         -- corridor of identical rooms would fold back on itself)
         if id ~= from and getRoomArea(id) == getRoomArea(from)
             and (not back or back == from)
-            and getRoomExits(from)[opp] ~= id
+            and not taken[id]
             and math.max(math.abs(a - x), math.abs(b - y),
                 math.abs(c - z)) <= rmap.settings.maxSearchDistance then
             if hit then return nil end               -- ambiguous
@@ -738,7 +752,10 @@ function B.special(from, cmd, b, peer)
     local to = getSpecialExitsSwap(from)[cmd]
     -- a walked move may land in a known room; a preview never merges by
     -- fingerprint alone (look-alike rooms are different rooms)
-    if not to and not peer then to = B.find(b.fingerprint) end
+    if not to and not peer then
+        to = B.find(b.fingerprint)
+        if to and leadsTo(from)[to] then to = nil end
+    end
     -- a peered neighbour that looks like this room is another room, not a loop
     if to == from then to = nil end
     if to then
@@ -834,8 +851,13 @@ function rmap.speedwalk()
     -- reached after step i (the start room is not listed)
     if type(dirs) ~= "table" or #dirs == 0 then return end
     rmap.job = "speedwalk"
+    rmap.jobId = (rmap.jobId or 0) + 1
+    local id = rmap.jobId
+    -- a late callback of a cancelled walk must not step or clear a newer job
+    local function live() return rmap.job == "speedwalk" and rmap.jobId == id end
     local i = 0
     local function step()
+        if not live() then return end
         i = i + 1
         if i > #dirs then
             rmap.job = nil
@@ -843,6 +865,7 @@ function rmap.speedwalk()
             return
         end
         T.exec(dirs[i], function(b, why)
+            if not live() then return end
             local want = path and tonumber(path[i])
             if b and T.pos and (not want or T.pos == want) then
                 return step()
@@ -856,6 +879,8 @@ function rmap.speedwalk()
 end
 
 rmap.inits[#rmap.inits + 1] = function()
+    -- remember the profile's own doSpeedWalk (if any); rmap.stop restores it
+    if doSpeedWalk ~= rmap.speedwalk then rmap.prevSpeedWalk = doSpeedWalk end
     doSpeedWalk = rmap.speedwalk
 end
 

@@ -28,8 +28,13 @@ function rmap.speedwalk()
     -- reached after step i (the start room is not listed)
     if type(dirs) ~= "table" or #dirs == 0 then return end
     rmap.job = "speedwalk"
+    rmap.jobId = (rmap.jobId or 0) + 1
+    local id = rmap.jobId
+    -- a late callback of a cancelled walk must not step or clear a newer job
+    local function live() return rmap.job == "speedwalk" and rmap.jobId == id end
     local i = 0
     local function step()
+        if not live() then return end
         i = i + 1
         if i > #dirs then
             rmap.job = nil
@@ -37,6 +42,7 @@ function rmap.speedwalk()
             return
         end
         T.exec(dirs[i], function(b, why)
+            if not live() then return end
             local want = path and tonumber(path[i])
             if b and T.pos and (not want or T.pos == want) then
                 return step()
@@ -50,5 +56,7 @@ function rmap.speedwalk()
 end
 
 rmap.inits[#rmap.inits + 1] = function()
+    -- remember the profile's own doSpeedWalk (if any); rmap.stop restores it
+    if doSpeedWalk ~= rmap.speedwalk then rmap.prevSpeedWalk = doSpeedWalk end
     doSpeedWalk = rmap.speedwalk
 end
