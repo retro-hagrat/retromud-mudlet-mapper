@@ -21,7 +21,7 @@ resolves it.
 | `peer <x>`, `scry`, other preview verbs | PREVIEW | attach to a neighbor or be ignored — **never create** |
 | cardinal direction (`n`, `sw`, `up`…) | ADVANCE | move into the expected neighbor, or create (the only automatic creation) |
 | anything else | MAYBE_MOVE | become a special-exit transition only if the block fingerprint ≠ current room; otherwise treat as VERIFY |
-| (nothing pending) | SPONTANEOUS | invalidate position → UNSYNCED — **never create** |
+| (nothing pending) | SPONTANEOUS | invalidate position → UNSYNCED — **never create**; except the room we are already in (the game redisplays it, e.g. after registration), which changes nothing |
 
 The preview-verb list (`peer`, `scry`, …) is configuration, extended during
 calibration as more room-showing commands are discovered.
@@ -139,6 +139,7 @@ upgrades.
   extend PREVIEW config.
 - Game-forced movement (drag, summon, recall) arrives as SPONTANEOUS →
   UNSYNCED → next `look` heals.
+  A forced move between twin rooms (same fingerprint) is not noticed.
 - Following other players: the game sends moves the client did not. Scan and
   speedwalk must refuse to run while a follow is active.
 - LP-driver command ordering is assumed strictly per-command; per-expectation

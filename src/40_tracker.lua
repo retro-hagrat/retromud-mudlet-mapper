@@ -134,7 +134,16 @@ function T.onRoom(_, b)
     expire()
     T.handled = true
     local e = table.remove(T.q, 1)
-    if not e then T.pos = nil return end             -- SPONTANEOUS
+    if not e then                                    -- SPONTANEOUS
+        -- The game printing the room we are already in (after registration,
+        -- say) is not movement. Any other room means we may have been moved
+        -- (drag, summon): the position is unknown. Twin rooms share a
+        -- fingerprint, so a forced move between twins goes unnoticed.
+        -- (pcall: the position may name a room deleted since, e.g. by undo)
+        local same = T.pos and select(2, pcall(rmap.build.fp, T.pos)) == b.fingerprint
+        if not same then T.pos = nil end
+        return
+    end
     resolve(e, b)
     T.focus()
     done(e, b)

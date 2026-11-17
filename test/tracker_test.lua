@@ -163,6 +163,17 @@ assert(rmap.track.state() == "UNSYNCED")
 go("e", "R", { "west" })                   -- unsynced + no match: no create
 assert(S.roomCount() == 4 and rmap.track.state() == "UNSYNCED", "no guess")
 
+-- fixture 5b: an unprompted redisplay of the room we are in changes nothing;
+-- an unprompted block of any other room still loses the position
+fresh(); start("A", { "east" })
+go("e", "B", { "east", "west" })
+show("B", { "east", "west" })
+assert(rmap.track.pos == (one("B")) and rmap.track.state() == "SYNCED",
+    "redisplay of the current room lost the position")
+assert(S.roomCount() == 2, "redisplay created a room")
+show("Z", { "north" })
+assert(rmap.track.state() == "UNSYNCED", "a different room must still unsync")
+
 -- fixture 6: peer preview identifies a neighbour, position unchanged
 fresh(); start("A", { "east" })
 go("e", "B", { "east", "west" })
