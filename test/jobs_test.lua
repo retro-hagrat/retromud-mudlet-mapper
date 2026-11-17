@@ -63,6 +63,7 @@ local function fresh(w, start)
     S.install()
     S.load(body)
     S.fire("sysLoadEvent")
+    rmap.seed.checked = true     -- empty map on purpose: no first-login seeding
     rmap.mapping = true
     world, cur, answered = w, start, 0
 end

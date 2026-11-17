@@ -53,8 +53,14 @@ this repo, not in the artifact.
   `table.save`d file in the profile directory. Per-character prompt/exits
   patterns. Persisted UI geometry.
 - **Map persistence**: `saveMap`/`loadMap` (plus `saveJsonMap` for
-  human-readable exports). The package ships no map; maps are built by playing
-  (or, later, generated offline).
+  human-readable exports). Maps are built by playing, plus one walked seed per
+  guild start area (`seeds/<guild>.json`, bundled in the package, extracted to
+  `<profile>/retromud/seeds/`). On the first room block of a session with an
+  empty map (a new character), `45_seed` finds the seed whose start-room
+  fingerprint matches (the room marked `userData start = "1"`; `build.py`
+  generates `rmap.seedIndex` and fails on duplicates), loads it, turns mapping
+  on and syncs. No match: a fresh map starts at that room. A map that has
+  rooms is never touched, because `loadJsonMap` replaces the whole map.
 
 ## Module layout and contracts
 

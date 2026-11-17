@@ -66,6 +66,12 @@ local function installMap(g)
     end
     g.setRoomName = function(id, v) rec("setRoomName", id, v); room(id).name = v end
     g.getRoomName = function(id) return room(id).name end
+    g.getRooms = function()
+        local out = {}
+        for id, r in pairs(S.map.rooms) do out[id] = r.name end
+        return out
+    end
+    g.getMudletHomeDir = function() return "/profile" end
     g.setRoomArea = function(id, a) rec("setRoomArea", id, a); room(id).area = a end
     g.getRoomArea = function(id) return room(id).area end
     g.setRoomCoordinates = function(id, x, y, z)

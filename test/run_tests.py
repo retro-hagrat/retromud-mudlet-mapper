@@ -31,6 +31,11 @@ def main():
     print((t.stdout + t.stderr).strip())
     if t.returncode:
         return 2
+    sd = subprocess.run([lua(), os.path.join(HERE, "seed_test.lua"), body],
+                        capture_output=True, text=True)
+    print((sd.stdout + sd.stderr).strip())
+    if sd.returncode:
+        return 2
     j = subprocess.run([lua(), os.path.join(HERE, "jobs_test.lua"), body, CAP],
                        capture_output=True, text=True)
     print((j.stdout + j.stderr).strip())
