@@ -130,4 +130,24 @@ assert(rooms[1].fingerprint == "The Soggy Scientist|west")
 feed({ "You see nothing special.", "The only obvious exit is west.",
     "Hp: 1/1  Sp: 1/1  Ep: 1/1" })
 assert(#rooms == 0, "bare sentence became a room")
+-- creation and first-login rooms are never raised; a real room in the same
+-- segment still is (live capture: guild room, guide chatter, disclaimers room)
+feed({ "Orange Tsoda Pool", "  An orange pool.", "Obvious exits are: northeast, and west.",
+    "Wysoom guide gasps 'Hello master! To learn more about me, ask me about world",
+    "      guide.  To learn more about how to play this game, ask me about getting",
+    "      started.'", "You must read a few disclaimers once in the",
+    "entire life of your character on Retromud.", "Welcome to RetroMUD",
+    "  This fairly large room, is very clean and sterile looking.",
+    "Official documents and pamphlets lie all over the place.", " It is fairly well lit here.",
+    "Obvious exits are: enter, and skip.", "Hp: 1/1  Sp: 1/1  Ep: 1/1" })
+assert(#rooms == 1 and rooms[1].name == "Orange Tsoda Pool", "ignored room was raised: " .. #rooms)
+for _, blk in ipairs({
+    { "Character Creation", "Obvious exits are: enter, prev, and shrines." },
+    { "Race Selection Room", "Obvious exits are: next, and prev." },
+    { "Guild Selection Room", "The only obvious exit is next." },
+    { "A room full of shrines", "Obvious exits are: agi, allstats, cha, con, dex, hermmax, int, maxsize, minsize, out, per, skillmax, spirmax, str, and wis." },
+    { "A small shrine", "The only obvious exit is out." } }) do
+    feed({ blk[1], "  A room.", blk[2], "Hp: 1/1  Sp: 1/1  Ep: 1/1" })
+    assert(#rooms == 0, blk[1] .. " was raised")
+end
 print("capture_test ok")

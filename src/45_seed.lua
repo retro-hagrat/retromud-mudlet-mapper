@@ -7,25 +7,18 @@
 -- Seeds ship in the package as seeds/<name>.json; build.py generates
 -- rmap.seedIndex (start fingerprint -> seed name) from the rooms marked
 -- userData start = "1". Runs after 40_tracker so the tracker has already
--- resolved the block (a spontaneous login block leaves T.pos nil).
+-- resolved the block (a spontaneous login block leaves T.pos nil). Creation and
+-- first-login rooms never reach it: see settings.ignoreRooms.
 
 rmap.seed = { checked = false }
 local S = rmap.seed
-
--- Character creation prints ordinary room blocks before the game starts.
--- They are not the player's world: skip them without using up the one try.
-S.ignore = {
-    ["Character Creation|enter,prev,shrines"] = true,
-    ["Race Selection Room|next,prev"] = true,
-    ["Guild Selection Room|next"] = true,
-}
 
 function S.path(name)
     return getMudletHomeDir() .. "/" .. rmap.name .. "/seeds/" .. name .. ".json"
 end
 
 function S.onRoom(_, b)
-    if S.checked or S.ignore[b.fingerprint] then return end
+    if S.checked then return end
     S.checked = true                 -- once per session, whatever happens
     if next(getRooms() or {}) then return end
     local name = rmap.seedIndex and rmap.seedIndex[b.fingerprint]

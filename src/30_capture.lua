@@ -104,10 +104,13 @@ local function scan(buf)
                 local lines = {}
                 for k = t, last do lines[#lines + 1] = buf[k] end
                 local name = buf[t]:match("^(.-)%s*$")
-                raiseEvent("rmap.onRoom", {
-                    name = name, exits = exits, lines = lines,
-                    fingerprint = fingerprint(name, exits),
-                })
+                local fp = fingerprint(name, exits)
+                if not rmap.settings.ignoreRooms[fp] then
+                    raiseEvent("rmap.onRoom", {
+                        name = name, exits = exits, lines = lines,
+                        fingerprint = fp,
+                    })
+                end
             end
             lo, i = last + 1, last + 1
         else

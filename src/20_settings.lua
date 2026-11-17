@@ -56,6 +56,20 @@ rmap.settings = {
     freeformDz = { climb = 1 },
     areaName = "RetroMUD",
 
+    -- Room blocks the game prints around character creation and the first
+    -- login. They are not part of the world: capture never raises them, so
+    -- neither the tracker nor the seeder sees them. By fingerprint.
+    ignoreRooms = {
+        ["Character Creation|enter,prev,shrines"] = true,
+        ["Race Selection Room|next,prev"] = true,
+        ["Guild Selection Room|next"] = true,
+        ["Welcome to RetroMUD|enter,skip"] = true,       -- one-time disclaimers room
+        -- the creation shrines (stat boosts) off Character Creation: a hub and
+        -- fourteen identical rooms
+        ["A room full of shrines|agi,allstats,cha,con,dex,hermmax,int,maxsize,minsize,out,per,skillmax,spirmax,str,wis"] = true,
+        ["A small shrine|out"] = true,
+    },
+
     -- Cardinal directions: abbreviation, Mudlet direction number
     -- (setExit/setExitStub), coordinate delta, opposite. in/out are not
     -- here: they have no delta, so they are freeform (special) exits.

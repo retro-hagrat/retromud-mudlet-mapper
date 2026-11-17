@@ -122,4 +122,26 @@ local placed = S.map.rooms[rmap.track.pos]
 assert(placed and not (placed.x == 0 and placed.y == -1 and placed.z == 0),
     "new room was put on top of an existing room in its area")
 
+-- 10. the real first login: `enter` typed in creation, then the guild room,
+-- the guide's chatter and the disclaimers room, all before one prompt. The
+-- seed loads, the player stays on the guild's start room, and the disclaimers
+-- room is not mapped or linked as an `enter` exit.
+loaded = boot()
+send("enter")
+for _, l in ipairs({
+    "Biomancer Library", "  A place.", "The only obvious exit is south.",
+    "Wysoom guide gasps 'Hello master! To learn more about me, ask me about world",
+    "      guide.  To learn more about how to play this game, ask me about getting",
+    "      started.'", "You must read a few disclaimers once in the",
+    "entire life of your character on Retromud.", "Welcome to RetroMUD",
+    "  This fairly large room, is very clean and sterile looking.",
+    "A very stern receptionist sits behind a large imposing desk.",
+    " It is fairly well lit here.", "Obvious exits are: enter, and skip.", PROMPT }) do
+    rmap.onLine(l)
+end
+assert(loaded() == "/profile/retromud/seeds/biomancer.json", "seed not loaded")
+assert(S.roomCount() == 1, "disclaimers room was mapped: " .. S.roomCount() .. " rooms")
+assert(rmap.track.pos == 1, "player moved off the start room: " .. tostring(rmap.track.pos))
+assert(next(getSpecialExitsSwap(1)) == nil, "a bogus special exit was recorded")
+
 print("seed_test ok")

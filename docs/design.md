@@ -62,8 +62,10 @@ this repo, not in the artifact.
   on and syncs. No match: a fresh map starts at that room. A map that has
   rooms is never touched, because `loadJsonMap` replaces the whole map.
   Character-creation rooms (Character Creation, Race Selection, Guild
-  Selection) print ordinary room blocks first; `45_seed` skips them without
-  using up its one try (`S.ignore`, by fingerprint).
+  Selection) and the one-time "Welcome to RetroMUD" disclaimers room print
+  ordinary room blocks around the first login, often in the same segment as the
+  guild room. Capture never raises them (`settings.ignoreRooms`, by
+  fingerprint), so neither the seeder nor the tracker sees them.
 - **Areas**: each seed has one area named for its primary guild ("Fighter").
   A room created by walking joins the area of the room it was entered from,
   so leaving a seeded guild stays in that area; `rmap area <name>` pins the
