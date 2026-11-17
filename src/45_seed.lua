@@ -27,6 +27,10 @@ end
 function S.onRoom(_, b)
     if S.checked then return end
     S.checked = true                 -- once per session, whatever happens
+    -- Whatever is still queued comes from commands typed before this room
+    -- (creation, login, registration): none can relate to the map. Left in,
+    -- a stale entry would claim the next room block.
+    rmap.track.q = {}
     if next(getRooms() or {}) then
         -- a returning player: the map is theirs, never replaced; mapping
         -- resumes unless they stopped it

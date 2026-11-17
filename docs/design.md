@@ -74,6 +74,9 @@ this repo, not in the artifact.
   returning player's existing map at the first room of a session). The player's
   explicit `rmap start` / `rmap stop` is stored in the map's user data
   (`rmap.mapping` = on|off) and an `off` is honoured next session; unset means on.
+  At the first room of a session `45_seed` also clears the tracker's queue:
+  whatever was typed before it (creation, login, registration) cannot relate to
+  the map and would otherwise claim the next room block.
 
 ## Module layout and contracts
 

@@ -163,4 +163,25 @@ assert(S.roomCount() == 1, "disclaimers room was mapped: " .. S.roomCount() .. "
 assert(rmap.track.pos == 1, "player moved off the start room: " .. tostring(rmap.track.pos))
 assert(next(getSpecialExitsSwap(1)) == nil, "a bogus special exit was recorded")
 
+-- 11. a wrong turn in an ignored room loses the position; the redisplayed
+-- guild room after registration puts it back
+loaded = boot()
+block("Biomancer Library", "south")
+assert(rmap.track.pos == 1)
+rmap.track.pos = nil                              -- e.g. a rejected move expired
+block("Biomancer Library", "south")               -- the game prints the guild room again
+assert(rmap.track.pos == 1 and rmap.track.state() == "SYNCED", "lost position not healed")
+
+-- 12. commands typed before the first room (creation, description, enter) must
+-- not claim a later block: a quick first move creates no bogus special exit
+loaded = boot()
+send("desc set"); send("."); send("enter")
+block("Biomancer Library", "south")
+assert(loaded() and rmap.track.pos == 1)
+assert(#rmap.track.q == 0, "stale expectations survived the first room: " .. #rmap.track.q)
+send("south")
+blockEx("Biomancer Entrance", "Obvious exits are: north, and east.")
+assert(next(S.map.rooms[1].special) == nil, "a stale expectation created a special exit")
+assert(rmap.track.pos and rmap.track.pos ~= 1, "the first move was not followed")
+
 print("seed_test ok")

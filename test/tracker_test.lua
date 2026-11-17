@@ -174,6 +174,18 @@ assert(S.roomCount() == 2, "redisplay created a room")
 show("Z", { "north" })
 assert(rmap.track.state() == "UNSYNCED", "a different room must still unsync")
 
+-- fixture 5c: an unprompted block heals a lost position when it names exactly
+-- one known room, and never creates; an unknown room leaves it lost
+fresh(); start("A", { "east" })
+go("e", "B", { "east", "west" })
+rmap.track.pos = nil                              -- position lost
+show("B", { "east", "west" })                     -- the game prints B, unprompted
+assert(rmap.track.pos == (one("B")) and rmap.track.state() == "SYNCED", "unique match did not heal")
+show("A", { "east" })                             -- moved to another known room
+assert(rmap.track.pos == (one("A")), "forced move to a known room not followed")
+show("Z", { "north" })                            -- an unknown room
+assert(rmap.track.state() == "UNSYNCED" and S.roomCount() == 2, "unknown room guessed or created")
+
 -- fixture 6: peer preview identifies a neighbour, position unchanged
 fresh(); start("A", { "east" })
 go("e", "B", { "east", "west" })
