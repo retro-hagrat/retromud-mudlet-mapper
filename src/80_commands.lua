@@ -23,8 +23,17 @@ end
 
 local T, B = rmap.track, rmap.build
 
-function rmap.commands.start() rmap.mapping = true rmap.out("mapping on", "ok") end
-function rmap.commands.stop() rmap.mapping = false rmap.out("mapping off", "ok") end
+-- the choice is remembered across sessions (see 45_seed)
+function rmap.commands.start()
+    rmap.mapping = true
+    rmap.seed.remember("on")
+    rmap.out("mapping on", "ok")
+end
+function rmap.commands.stop()
+    rmap.mapping = false
+    rmap.seed.remember("off")
+    rmap.out("mapping off", "ok")
+end
 
 -- Every where/scan run gets a fresh id; its callbacks drop out once the
 -- job was cancelled or replaced, so a late reply never revives it.

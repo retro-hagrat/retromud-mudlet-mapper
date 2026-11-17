@@ -70,6 +70,10 @@ this repo, not in the artifact.
   A room created by walking joins the area of the room it was entered from,
   so leaving a seeded guild stays in that area; `rmap area <name>` pins the
   area instead. Free grid cells are looked up in the area the new room joins.
+- **Mapping on/off**: mapping turns on by itself (seeded, fresh, or resumed for a
+  returning player's existing map at the first room of a session). The player's
+  explicit `rmap start` / `rmap stop` is stored in the map's user data
+  (`rmap.mapping` = on|off) and an `off` is honoured next session; unset means on.
 
 ## Module layout and contracts
 

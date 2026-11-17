@@ -42,10 +42,10 @@ function S.reset()
     S.aliases, S.triggers, S.nextId, S.prompt = {}, {}, 0, false
     S.timers = {}
     S.onSend = nil
-    S.map = { rooms = {}, areas = {}, nextArea = 1 }
+    S.map = { rooms = {}, areas = {}, nextArea = 1, userdata = {} }
     _G.rmap, _G.doSpeedWalk = nil, nil
 end
-S.map = { rooms = {}, areas = {}, nextArea = 1 }
+S.map = { rooms = {}, areas = {}, nextArea = 1, userdata = {} }
 
 local function rec(name, ...)
     S.calls[#S.calls + 1] = { name = name, args = { ... } }
@@ -72,6 +72,8 @@ local function installMap(g)
         return out
     end
     g.getMudletHomeDir = function() return "/profile" end
+    g.setMapUserData = function(k, v) S.map.userdata[k] = v return true end
+    g.getMapUserData = function(k) return S.map.userdata[k] end
     g.setRoomArea = function(id, a) rec("setRoomArea", id, a); room(id).area = a end
     g.getRoomArea = function(id) return room(id).area end
     g.setRoomCoordinates = function(id, x, y, z)

@@ -64,11 +64,30 @@ block("A muddy lane", "east")
 assert(not loaded(), "loaded a seed for an unknown room")
 assert(rmap.mapping and S.roomCount() == 1 and rmap.track.pos, "no fresh map")
 
--- 4. existing map: untouched, mapping stays off
+-- 4. existing map (a returning player): never replaced, and mapping resumes
 loaded = boot({ [7] = "Somewhere I mapped" })
 block("Biomancer Library", "south")
 assert(not loaded(), "replaced an existing map")
-assert(not rmap.mapping and S.roomCount() == 1, "touched an existing map")
+assert(S.roomCount() == 1, "touched an existing map")
+assert(rmap.mapping, "mapping did not resume for a returning player")
+
+-- 4b. ...unless they stopped it: that choice is remembered across sessions
+loaded = boot({ [7] = "Somewhere I mapped" })
+S.map.userdata["rmap.mapping"] = "off"
+block("Biomancer Library", "south")
+assert(not loaded() and S.roomCount() == 1 and not rmap.mapping,
+    "mapping resumed after the player stopped it")
+
+-- 4c. rmap stop / rmap start write the choice; it is read back next session
+loaded = boot({ [7] = "Somewhere I mapped" })
+assert(S.alias("rmap stop") and S.map.userdata["rmap.mapping"] == "off", "stop not remembered")
+assert(S.alias("rmap start") and S.map.userdata["rmap.mapping"] == "on", "start not remembered")
+S.alias("rmap stop")
+local choice = S.map.userdata["rmap.mapping"]     -- the next session finds it in the map
+boot({ [7] = "Somewhere I mapped" })
+S.map.userdata["rmap.mapping"] = choice
+block("Biomancer Library", "south")
+assert(not rmap.mapping, "a remembered stop was ignored by the next session")
 
 -- 5. character creation prints room blocks first: ignored, and they must not
 -- use up the one try; the guild room that follows still seeds
