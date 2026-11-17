@@ -61,6 +61,13 @@ this repo, not in the artifact.
   generates `rmap.seedIndex` and fails on duplicates), loads it, turns mapping
   on and syncs. No match: a fresh map starts at that room. A map that has
   rooms is never touched, because `loadJsonMap` replaces the whole map.
+  Character-creation rooms (Character Creation, Race Selection, Guild
+  Selection) print ordinary room blocks first; `45_seed` skips them without
+  using up its one try (`S.ignore`, by fingerprint).
+- **Areas**: each seed has one area named for its primary guild ("Fighter").
+  A room created by walking joins the area of the room it was entered from,
+  so leaving a seeded guild stays in that area; `rmap area <name>` pins the
+  area instead. Free grid cells are looked up in the area the new room joins.
 
 ## Module layout and contracts
 

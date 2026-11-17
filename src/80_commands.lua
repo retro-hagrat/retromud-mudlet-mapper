@@ -15,7 +15,7 @@ function rmap.commands.help()
         { "rmap where", "re-sync position from the room you are in" },
         { "rmap scan", "peer every exit of this room and map the stubs" },
         { "rmap undo", "remove the last auto-created room" },
-        { "rmap area [name]", "show or set the area new rooms go into" },
+        { "rmap area [name]", "show, or pin, the area new rooms go into (default: their origin room's)" },
     }) do
         rmap.out(string.format("  <cyan>%-16s<reset>%s", c[1], c[2]), "markup")
     end
@@ -171,7 +171,10 @@ end
 
 -- Area names are session-only (not persisted); set it before mapping.
 function rmap.commands.area(name)
-    if name and name ~= "" then rmap.settings.areaName = name end
+    if name and name ~= "" then
+        rmap.settings.areaName = name
+        rmap.settings.areaPinned = true     -- new rooms go here, not to their origin's area
+    end
     rmap.out("area: " .. rmap.settings.areaName, "ok")
 end
 

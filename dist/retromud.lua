@@ -12,7 +12,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud"
-rmap.version = "0.0.17"
+rmap.version = "0.0.18"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
@@ -534,12 +534,20 @@ end
 rmap.seed = { checked = false }
 local S = rmap.seed
 
+-- Character creation prints ordinary room blocks before the game starts.
+-- They are not the player's world: skip them without using up the one try.
+S.ignore = {
+    ["Character Creation|enter,prev,shrines"] = true,
+    ["Race Selection Room|next,prev"] = true,
+    ["Guild Selection Room|next"] = true,
+}
+
 function S.path(name)
     return getMudletHomeDir() .. "/" .. rmap.name .. "/seeds/" .. name .. ".json"
 end
 
 function S.onRoom(_, b)
-    if S.checked then return end
+    if S.checked or S.ignore[b.fingerprint] then return end
     S.checked = true                 -- once per session, whatever happens
     if next(getRooms() or {}) then return end
     local name = rmap.seedIndex and rmap.seedIndex[b.fingerprint]
@@ -584,6 +592,17 @@ local function areaId()
     return getAreaTable()[name] or addAreaName(name)
 end
 
+-- The area a room entered from `from` joins: its origin's, so walking out of
+-- a seeded guild map stays in that guild's area. `rmap area <name>` pins the
+-- setting instead; a room with no origin (adopt) uses the setting too.
+local function areaFor(from)
+    if not rmap.settings.areaPinned and from then
+        local a = getRoomArea(from)
+        if a then return a end
+    end
+    return areaId()
+end
+
 function B.fp(id)
     -- unverified: getRoomUserData returns "" when the key is unset
     return getRoomUserData(id, "fp")
@@ -622,10 +641,10 @@ local function link(from, to, dir)
     setExitStub(from, n, false)
 end
 
-local function create(b, x, y, z, peer)
+local function create(b, x, y, z, peer, from)
     local id = createRoomID()
     addRoom(id)
-    setRoomArea(id, areaId())
+    setRoomArea(id, areaFor(from))
     setRoomName(id, b.name)
     setRoomCoordinates(id, x, y, z)
     setRoomUserData(id, "fp", b.fingerprint)
@@ -664,8 +683,9 @@ end
 -- The grid is only a layout: the MUD's exits need not fit on it. The
 -- cell (x, y, z) if free, else the nearest free cell on that level that
 -- is not in `reserved` ("x,y,z" keys), ties broken by distance to the
--- source cell (sx, sy) so the room stays close to where it came from.
-local function freeCell(x, y, z, reserved, sx, sy)
+-- source cell (sx, sy) so the room stays close to where it came from. Cells
+-- are checked in `area`, the area the new room will join.
+local function freeCell(x, y, z, reserved, sx, sy, area)
     reserved = reserved or {}
     for r = 0, math.huge do
         local bx, by, bd
@@ -673,7 +693,7 @@ local function freeCell(x, y, z, reserved, sx, sy)
             for j = -r, r do
                 local cx, cy = x + i, y + j
                 if math.max(math.abs(i), math.abs(j)) == r
-                    and not roomAt(cx, cy, z)
+                    and not roomAt(cx, cy, z, area)
                     and not reserved[cx .. "," .. cy .. "," .. z] then
                     local d = sx and (cx - sx) * (cx - sx)
                         + (cy - sy) * (cy - sy) or 0
@@ -790,8 +810,8 @@ function B.advance(from, dir, b, peer)
     end
     local x, y, z = getRoomCoordinates(from)
     x, y, z = freeCell(x + d.dx, y + d.dy, z + d.dz,
-        reservedFor(from, dir), x, y)
-    to = create(b, x, y, z, peer)
+        reservedFor(from, dir), x, y, areaFor(from))
+    to = create(b, x, y, z, peer, from)
     B.created[#B.created + 1] = { id = to, from = from, dir = dir }
     link(from, to, dir)
     if not peer then setInferred(from, dir, false) end
@@ -825,8 +845,8 @@ function B.special(from, cmd, b, peer)
         local x, y, z = getRoomCoordinates(from)
         -- nearest free cell beside the room, off its cardinal exits' cells
         x, y, z = freeCell(x, y, z + (rmap.settings.freeformDz[cmd] or 0),
-            reservedFor(from), x, y)
-        to = create(b, x, y, z, peer)
+            reservedFor(from), x, y, areaFor(from))
+        to = create(b, x, y, z, peer, from)
         B.created[#B.created + 1] = { id = to, from = from, cmd = cmd }
         stub(to, b)
     end
@@ -966,7 +986,7 @@ function rmap.commands.help()
         { "rmap where", "re-sync position from the room you are in" },
         { "rmap scan", "peer every exit of this room and map the stubs" },
         { "rmap undo", "remove the last auto-created room" },
-        { "rmap area [name]", "show or set the area new rooms go into" },
+        { "rmap area [name]", "show, or pin, the area new rooms go into (default: their origin room's)" },
     }) do
         rmap.out(string.format("  <cyan>%-16s<reset>%s", c[1], c[2]), "markup")
     end
@@ -1122,7 +1142,10 @@ end
 
 -- Area names are session-only (not persisted); set it before mapping.
 function rmap.commands.area(name)
-    if name and name ~= "" then rmap.settings.areaName = name end
+    if name and name ~= "" then
+        rmap.settings.areaName = name
+        rmap.settings.areaPinned = true     -- new rooms go here, not to their origin's area
+    end
     rmap.out("area: " .. rmap.settings.areaName, "ok")
 end
 

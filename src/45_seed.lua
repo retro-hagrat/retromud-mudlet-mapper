@@ -12,12 +12,20 @@
 rmap.seed = { checked = false }
 local S = rmap.seed
 
+-- Character creation prints ordinary room blocks before the game starts.
+-- They are not the player's world: skip them without using up the one try.
+S.ignore = {
+    ["Character Creation|enter,prev,shrines"] = true,
+    ["Race Selection Room|next,prev"] = true,
+    ["Guild Selection Room|next"] = true,
+}
+
 function S.path(name)
     return getMudletHomeDir() .. "/" .. rmap.name .. "/seeds/" .. name .. ".json"
 end
 
 function S.onRoom(_, b)
-    if S.checked then return end
+    if S.checked or S.ignore[b.fingerprint] then return end
     S.checked = true                 -- once per session, whatever happens
     if next(getRooms() or {}) then return end
     local name = rmap.seedIndex and rmap.seedIndex[b.fingerprint]
