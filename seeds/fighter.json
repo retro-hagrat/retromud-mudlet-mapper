@@ -12,7 +12,7 @@
         {
             "id": 1,
             "name": "RetroMUD",
-            "roomCount": 34,
+            "roomCount": 35,
             "rooms": [
                 {
                     "coordinates": [
@@ -810,15 +810,14 @@
                         {
                             "exitId": 27,
                             "name": "east"
+                        },
+                        {
+                            "exitId": 35,
+                            "name": "west"
                         }
                     ],
                     "id": 31,
                     "name": "Outside of the fighter fortress",
-                    "stubExits": [
-                        {
-                            "name": "west"
-                        }
-                    ],
                     "userData": {
                         "bl": "",
                         "fp": "Outside of the fighter fortress|east,west",
@@ -889,6 +888,36 @@
                     "userData": {
                         "bl": "",
                         "fp": "Fighter guild kitchen|east",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -3,
+                        -2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 31,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 35,
+                    "name": "Path of the Sun Dragon",
+                    "stubExits": [
+                        {
+                            "name": "north"
+                        },
+                        {
+                            "name": "south"
+                        }
+                    ],
+                    "userData": {
+                        "bl": "",
+                        "fp": "Path of the Sun Dragon|east,north,south",
+                        "outside": "1",
                         "source": "walk"
                     }
                 }
@@ -1052,5 +1081,5 @@
     "playerRoomStyle": 0,
     "playersRoomId": {
     },
-    "roomCount": 34
+    "roomCount": 35
 }

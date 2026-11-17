@@ -12,7 +12,7 @@
         {
             "id": 1,
             "name": "RetroMUD",
-            "roomCount": 22,
+            "roomCount": 23,
             "rooms": [
                 {
                     "coordinates": [
@@ -115,17 +115,16 @@
                     "environment": -1,
                     "exits": [
                         {
+                            "exitId": 23,
+                            "name": "east"
+                        },
+                        {
                             "exitId": 2,
                             "name": "west"
                         }
                     ],
                     "id": 3,
                     "name": "Monastery entrance",
-                    "stubExits": [
-                        {
-                            "name": "east"
-                        }
-                    ],
                     "userData": {
                         "bl": "",
                         "fp": "Monastery entrance|east,west",
@@ -663,6 +662,36 @@
                         "fp": "Monk advancement|east",
                         "source": "walk"
                     }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 3,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 23,
+                    "name": "North Vigor Street",
+                    "stubExits": [
+                        {
+                            "name": "north"
+                        },
+                        {
+                            "name": "south"
+                        }
+                    ],
+                    "userData": {
+                        "bl": "",
+                        "fp": "North Vigor Street|north,south,west",
+                        "outside": "1",
+                        "source": "walk"
+                    }
                 }
             ]
         }
@@ -824,5 +853,5 @@
     "playerRoomStyle": 0,
     "playersRoomId": {
     },
-    "roomCount": 22
+    "roomCount": 23
 }

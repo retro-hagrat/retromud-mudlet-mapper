@@ -12,7 +12,7 @@
         {
             "id": 1,
             "name": "RetroMUD",
-            "roomCount": 1,
+            "roomCount": 2,
             "rooms": [
                 {
                     "coordinates": [
@@ -22,19 +22,66 @@
                     ],
                     "environment": -1,
                     "exits": [
-                    ],
-                    "id": 1,
-                    "name": "Psionicist training room",
-                    "stubExits": [
                         {
+                            "exitId": 2,
                             "name": "down"
                         }
                     ],
+                    "id": 1,
+                    "name": "Psionicist training room",
                     "userData": {
                         "bl": "",
                         "fp": "Psionicist training room|down",
                         "source": "walk",
                         "start": "1"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        0,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                    ],
+                    "id": 2,
+                    "name": "Psionicist Guild",
+                    "stubExits": [
+                        {
+                            "name": "east"
+                        },
+                        {
+                            "name": "north"
+                        },
+                        {
+                            "name": "northeast"
+                        },
+                        {
+                            "name": "northwest"
+                        },
+                        {
+                            "name": "south"
+                        },
+                        {
+                            "name": "southeast"
+                        },
+                        {
+                            "name": "southwest"
+                        },
+                        {
+                            "name": "up"
+                        },
+                        {
+                            "name": "west"
+                        }
+                    ],
+                    "userData": {
+                        "bl": "",
+                        "fp": "Psionicist Guild|castle,east,enter,north,northeast,northwest,south,southeast,southwest,up,west",
+                        "named_exits": "castle,enter",
+                        "outside": "1",
+                        "source": "walk"
                     }
                 }
             ]
@@ -197,5 +244,5 @@
     "playerRoomStyle": 0,
     "playersRoomId": {
     },
-    "roomCount": 1
+    "roomCount": 2
 }
