@@ -43,6 +43,8 @@ function S.onRoom(_, b)
     local name = rmap.seedIndex and rmap.seedIndex[b.fingerprint]
     if name then
         if loadJsonMap(S.path(name)) then
+            rmap.icons.apply(name)
+            if setMapZoom then pcall(setMapZoom, rmap.settings.seedZoom) end
             rmap.mapping = true
             rmap.track.pos = rmap.build.find(b.fingerprint)
             rmap.track.focus()

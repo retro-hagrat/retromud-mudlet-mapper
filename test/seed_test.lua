@@ -52,6 +52,16 @@ assert(rmap.mapping, "mapping not turned on")
 assert(rmap.track.pos == 1, "not placed on the start room: " .. tostring(rmap.track.pos))
 assert(rmap.track.state() == "SYNCED")
 assert(S.roomCount() == 1, "seeded map was added to")
+local zoomed = 0
+for _, c in ipairs(S.calls) do
+    if c.name == "setMapZoom" then zoomed = zoomed + 1; assert(c.args[1] == rmap.settings.seedZoom) end
+end
+assert(zoomed == 1, "seed load must set the zoom once: " .. zoomed)
+
+-- a map that already has rooms keeps the player's zoom
+loaded = boot({ [7] = "Somewhere" })
+block("Biomancer Library", "south")
+for _, c in ipairs(S.calls) do assert(c.name ~= "setMapZoom", "existing map was zoomed") end
 
 -- 2. only once per session: a later block must not reload
 S.map.rooms = {}
@@ -183,5 +193,29 @@ send("south")
 blockEx("Biomancer Entrance", "Obvious exits are: north, and east.")
 assert(next(S.map.rooms[1].special) == nil, "a stale expectation created a special exit")
 assert(rmap.track.pos and rmap.track.pos ~= 1, "the first move was not followed")
+
+-- 13. a seeded guild gets its service symbols; a seed not on the list gets none
+loaded = boot()
+local titles = { [2] = "Initiation Room", [3] = "Medicus Medice Training", [4] = "Hallway",
+    [5] = "Mantikor's Medical Supplies", [6] = "Biomancer Entrance" }
+local realLoad = loadJsonMap
+loadJsonMap = function(path)
+    realLoad(path)
+    for id, t in pairs(titles) do
+        S.map.rooms[id] = { name = t, area = 1, x = id, y = 0, z = 0, exits = {},
+            stubs = {}, special = {}, ud = {} }
+    end
+    return true
+end
+block("Biomancer Library", "south")
+local R = S.map.rooms
+assert(R[1].char == "S", "start room is not S: " .. tostring(R[1].char))
+assert(R[2].char == "J" and R[3].char == "T" and R[5].char == "$" and R[6].char == "E")
+assert(R[4].char == nil, "a plain hallway got a symbol")
+assert(R[2].charColor and R[1].charColor, "no symbol colour")
+assert(rmap.icons.symbolFor("The Lobby of the Biomantic College") == nil)
+rmap.icons.seeds = {}
+S.map.rooms[2].char = nil
+assert(rmap.icons.apply("biomancer") == 0 and S.map.rooms[2].char == nil, "unlisted seed was marked")
 
 print("seed_test ok")

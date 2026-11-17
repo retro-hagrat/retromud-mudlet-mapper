@@ -24,7 +24,7 @@ end
 
 -- Recorded only (no behaviour).
 local MAPPER_API = {
-    "connectExitStub", "setRoomChar", "centerview",
+    "connectExitStub", "setMapZoom", "centerview",
     "saveMap", "loadMap", "saveJsonMap", "loadJsonMap",
     "gotoRoom", "lockRoom", "createMapper",
 }
@@ -66,6 +66,9 @@ local function installMap(g)
     end
     g.setRoomName = function(id, v) rec("setRoomName", id, v); room(id).name = v end
     g.getRoomName = function(id) return room(id).name end
+    g.setRoomChar = function(id, ch) room(id).char = ch end
+    g.getRoomChar = function(id) return room(id).char or "" end
+    g.setRoomCharColor = function(id, r, gr, b) room(id).charColor = { r, gr, b } end
     g.getRooms = function()
         local out = {}
         for id, r in pairs(S.map.rooms) do out[id] = r.name end

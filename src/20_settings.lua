@@ -56,6 +56,10 @@ rmap.settings = {
     freeformDz = { climb = 1 },
     areaName = "RetroMUD",
 
+    -- Map zoom set when a guild seed loads (lower is closer). The default of 20 is too far out to
+    -- read the room symbols; 8 shows about a dozen rooms in the map pane. Returning players keep theirs.
+    seedZoom = 8,
+
     -- Room blocks the game prints around character creation and the first
     -- login. They are not part of the world: capture never raises them, so
     -- neither the tracker nor the seeder sees them. By fingerprint.
