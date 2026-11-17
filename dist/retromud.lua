@@ -12,7 +12,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud"
-rmap.version = "0.0.14"
+rmap.version = "0.0.15"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
@@ -238,13 +238,28 @@ local function findTitle(buf, lo, i)
     end
 end
 
+-- Last resort for areas whose descriptions are not indented at all: the
+-- earliest line before the exits line that reads as a title (short, not
+-- indented, no sentence punctuation at the end) and is directly followed
+-- by text. Chatter ends in punctuation ("...tower.'", "...alarm!").
+local function bareTitle(buf, lo, i)
+    for t = lo, i - 2 do
+        local l = buf[t]
+        if not isNoise(l) and not l:find("^%s") and #l <= 60
+            and not l:find("[%.!?'\"%]%)]%s*$") and titleLike(l)
+            and not isNoise(buf[t + 1]) then
+            return t
+        end
+    end
+end
+
 -- Returns the index after the last exits line handled.
 local function scan(buf)
     local lo, i = 1, 1
     while i <= #buf do
         local exits, last = parseExits(buf, i)
         if exits then
-            local t = findTitle(buf, lo, i)
+            local t = findTitle(buf, lo, i) or bareTitle(buf, lo, i)
             if t then
                 local lines = {}
                 for k = t, last do lines[#lines + 1] = buf[k] end

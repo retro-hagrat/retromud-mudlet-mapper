@@ -114,4 +114,20 @@ assert(#rooms == 1 and #rooms[1].exits == 0, "no exits")
 -- prefixed prompt and negative Sp end a block
 feed({ "Title", "  d", "Obvious exits are: up.", "EQ Tick: Hp: 1/1  Sp: -5/9  Ep: 1/1" })
 assert(#rooms == 1, "EQ Tick prompt")
+-- description with no indentation at all (Alchemist pub, live capture):
+-- chatter and the flying line above the title must not hide it
+feed({ "The golem looks at you and warns, 'Look out for the golems in the tower.'",
+    "You are flying.", "The Soggy Scientist",
+    "This building seems a fairly popular place to be between lectures. The",
+    "bartender is a quiet, efficent type, and the tables are full of happy",
+    "clean and the clientele are mostly students.",
+    "Look at the sign for commands you can use here.", "",
+    "The only obvious exit is west.", "Alchemy Student", "Arten, the bartender",
+    "Hp: 1/1  Sp: 1/1  Ep: 1/1" })
+assert(#rooms == 1 and rooms[1].name == "The Soggy Scientist", "unindented desc: " .. tostring(rooms[1] and rooms[1].name))
+assert(rooms[1].fingerprint == "The Soggy Scientist|west")
+-- ...and sentence text before an exits line is not a room
+feed({ "You see nothing special.", "The only obvious exit is west.",
+    "Hp: 1/1  Sp: 1/1  Ep: 1/1" })
+assert(#rooms == 0, "bare sentence became a room")
 print("capture_test ok")
