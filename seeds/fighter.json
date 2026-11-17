@@ -1,0 +1,1056 @@
+{
+    "anonymousAreaName": "Unnamed Area",
+    "areaCount": 2,
+    "areas": [
+        {
+            "id": -1,
+            "name": "Default Area",
+            "roomCount": 0,
+            "rooms": [
+            ]
+        },
+        {
+            "id": 1,
+            "name": "RetroMUD",
+            "roomCount": 34,
+            "rooms": [
+                {
+                    "coordinates": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 2,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 1,
+                    "name": "Fighter training room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Fighter training room|adv,west",
+                        "named_exits": "adv",
+                        "source": "walk",
+                        "start": "1"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 3,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 1,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 33,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 26,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 2,
+                    "name": "Great hall",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Great hall|east,north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 4,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 24,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 2,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 3,
+                    "name": "Small hallway",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Small hallway|north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 5,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 3,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 4,
+                    "name": "Small hallway",
+                    "stubExits": [
+                        {
+                            "name": "west"
+                        }
+                    ],
+                    "userData": {
+                        "bl": "",
+                        "fp": "Small hallway|east,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 6,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 4,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 5,
+                    "name": "Hallway leading to the battle grounds",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Hallway leading to the battle grounds|north,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        3,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 7,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 18,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 5,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 6,
+                    "name": "Entrance to the battle grounds",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Entrance to the battle grounds|east,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        3,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 14,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 8,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 6,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 7,
+                    "name": "East of the battle ground entrance",
+                    "userData": {
+                        "bl": "",
+                        "fp": "East of the battle ground entrance|east,north,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        3,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 9,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 7,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 8,
+                    "name": "East of the battle ground entrance",
+                    "userData": {
+                        "bl": "",
+                        "fp": "East of the battle ground entrance|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        3,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 10,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 8,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 9,
+                    "name": "Southeast corner of the battle grounds",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Southeast corner of the battle grounds|north,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        4,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 11,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 9,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 10,
+                    "name": "Between the far east wall and the east stone column",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Between the far east wall and the east stone column|north,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        5,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 12,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 10,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 11,
+                    "name": "Northeast corner of the battle grounds",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Northeast corner of the battle grounds|south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        5,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 11,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 13,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 12,
+                    "name": "Near the northeast corner of the battle grounds",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Near the northeast corner of the battle grounds|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        5,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 12,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 15,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 14,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 13,
+                    "name": "Battle ground room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Battle ground room|east,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        4,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 13,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 7,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 14,
+                    "name": "Between the two stone columns",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Between the two stone columns|north,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        5,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 13,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 16,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 15,
+                    "name": "Battle ground room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Battle ground room|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        5,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 15,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 23,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 17,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 16,
+                    "name": "Battle ground room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Battle ground room|east,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        4,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 16,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 18,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 17,
+                    "name": "Between the two stone columns",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Between the two stone columns|north,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        3,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 17,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 6,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 19,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 18,
+                    "name": "West of the battle ground entrance",
+                    "userData": {
+                        "bl": "",
+                        "fp": "West of the battle ground entrance|east,north,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        3,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 18,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 20,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 19,
+                    "name": "West of the battle ground entrance",
+                    "userData": {
+                        "bl": "",
+                        "fp": "West of the battle ground entrance|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -3,
+                        3,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 21,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 19,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 20,
+                    "name": "Southwest corner of the battle grounds",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Southwest corner of the battle grounds|east,north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -3,
+                        4,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 22,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 20,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 21,
+                    "name": "Between the far west wall and the west stone column",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Between the far west wall and the west stone column|north,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -3,
+                        5,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 23,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 21,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 22,
+                    "name": "Northwest corner of the battle grounds",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Northwest corner of the battle grounds|east,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        5,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 16,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 22,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 23,
+                    "name": "Near the northwest corner of the battle grounds",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Near the northwest corner of the battle grounds|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 3,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 25,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 24,
+                    "name": "Temple of Honor",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Temple of Honor|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -3,
+                        1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 24,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 25,
+                    "name": "The Chamber of the Battlelord",
+                    "userData": {
+                        "bl": "",
+                        "fp": "The Chamber of the Battlelord|east",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        -1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 2,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 32,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 27,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 26,
+                    "name": "Inner keep",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Inner keep|north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        -2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 26,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 28,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 31,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 30,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 27,
+                    "name": "Outside of the fighter fortress",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Outside of the fighter fortress|east,north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        -2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 29,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 27,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 28,
+                    "name": "Newbie shop",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Newbie shop|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        -2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 28,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 29,
+                    "name": "Fighter Check Room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Fighter Check Room|west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        -3,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 27,
+                            "name": "north"
+                        }
+                    ],
+                    "id": 30,
+                    "name": "Barracks",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Barracks|north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        -2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 27,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 31,
+                    "name": "Outside of the fighter fortress",
+                    "stubExits": [
+                        {
+                            "name": "west"
+                        }
+                    ],
+                    "userData": {
+                        "bl": "",
+                        "fp": "Outside of the fighter fortress|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        -1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 26,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 32,
+                    "name": "Fighter Advancement room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Fighter Advancement room|east",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 2,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 34,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 33,
+                    "name": "Fighter shop",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Fighter shop|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -3,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 33,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 34,
+                    "name": "Fighter guild kitchen",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Fighter guild kitchen|east",
+                        "source": "walk"
+                    }
+                }
+            ]
+        }
+    ],
+    "customEnvColors": [
+        {
+            "color24RGB": [
+                128,
+                0,
+                0
+            ],
+            "id": 257
+        },
+        {
+            "color24RGB": [
+                0,
+                128,
+                0
+            ],
+            "id": 258
+        },
+        {
+            "color24RGB": [
+                128,
+                128,
+                0
+            ],
+            "id": 259
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                128
+            ],
+            "id": 260
+        },
+        {
+            "color24RGB": [
+                128,
+                0,
+                128
+            ],
+            "id": 261
+        },
+        {
+            "color24RGB": [
+                0,
+                128,
+                128
+            ],
+            "id": 262
+        },
+        {
+            "color24RGB": [
+                192,
+                192,
+                192
+            ],
+            "id": 263
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                0
+            ],
+            "id": 264
+        },
+        {
+            "color24RGB": [
+                255,
+                0,
+                0
+            ],
+            "id": 265
+        },
+        {
+            "color24RGB": [
+                0,
+                255,
+                0
+            ],
+            "id": 266
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                0
+            ],
+            "id": 267
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                255
+            ],
+            "id": 268
+        },
+        {
+            "color24RGB": [
+                255,
+                0,
+                255
+            ],
+            "id": 269
+        },
+        {
+            "color24RGB": [
+                0,
+                255,
+                255
+            ],
+            "id": 270
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                255
+            ],
+            "id": 271
+        },
+        {
+            "color24RGB": [
+                128,
+                128,
+                128
+            ],
+            "id": 272
+        }
+    ],
+    "defaultAreaName": "Default Area",
+    "formatVersion": 1,
+    "labelCount": 0,
+    "mapSymbolFontDetails": "Bitstream Vera Sans Mono,12,-1,5,900,0,0,0,0,0,0,0,0,0,0,200,,0,0",
+    "mapSymbolFontFudgeFactor": 1,
+    "onlyMapSymbolFontToBeUsed": false,
+    "playerRoomColors": [
+        {
+            "color24RGB": [
+                255,
+                0,
+                0
+            ]
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                255
+            ]
+        }
+    ],
+    "playerRoomInnerDiameterPercentage": 70,
+    "playerRoomOuterDiameterPercentage": 120,
+    "playerRoomStyle": 0,
+    "playersRoomId": {
+    },
+    "roomCount": 34
+}

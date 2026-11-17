@@ -1,0 +1,1032 @@
+{
+    "anonymousAreaName": "Unnamed Area",
+    "areaCount": 2,
+    "areas": [
+        {
+            "id": -1,
+            "name": "Default Area",
+            "roomCount": 0,
+            "rooms": [
+            ]
+        },
+        {
+            "id": 1,
+            "name": "RetroMUD",
+            "roomCount": 34,
+            "rooms": [
+                {
+                    "coordinates": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 2,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 1,
+                    "name": "Training room.",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Training room.|adv-guild,south",
+                        "named_exits": "adv-guild",
+                        "source": "walk",
+                        "start": "1"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        -1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 1,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 3,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 34,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 29,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 2,
+                    "name": "Short hallway",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Short hallway|east,north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        -1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 11,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 4,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 2,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 14,
+                            "name": "up"
+                        }
+                    ],
+                    "id": 3,
+                    "name": "Merchant's Guild Central Office",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Merchant's Guild Central Office|east,north,up,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 5,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 3,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 8,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 4,
+                    "name": "Merchant Check Office",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Merchant Check Office|north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 6,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 4,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 5,
+                    "name": "Joining room of the Equipment Safehands guild.",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Joining room of the Equipment Safehands guild.|north,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 7,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 5,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 6,
+                    "name": "Advancement room of the Equipment Safehands guild",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Advancement room of the Equipment Safehands guild|north,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 6,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 7,
+                    "name": "Training room of the Equipment Safehands guild",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Training room of the Equipment Safehands guild|south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 4,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 9,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 8,
+                    "name": "Joining room of the Equipment Safeguard guild.",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Joining room of the Equipment Safeguard guild.|north,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -3,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 8,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 10,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 9,
+                    "name": "Advancement room of the Equipment Safeguard guild",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Advancement room of the Equipment Safeguard guild|north,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -4,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 9,
+                            "name": "north"
+                        }
+                    ],
+                    "id": 10,
+                    "name": "Training room of the Equipment Safeguard guild",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Training room of the Equipment Safeguard guild|north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 12,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 3,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 11,
+                    "name": "Salesman Joining",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Salesman Joining|east,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 13,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 11,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 12,
+                    "name": "Salesman Advancement",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Salesman Advancement|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        4,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 12,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 13,
+                    "name": "Salesman Training",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Salesman Training|west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        -1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 16,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 15,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 3,
+                            "name": "down"
+                        }
+                    ],
+                    "id": 14,
+                    "name": "Entrance to the Merchant Council.",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Entrance to the Merchant Council.|down,east,north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 14,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 15,
+                    "name": "Join room of the Merchant Council.",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Join room of the Merchant Council.|west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        0,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 25,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 26,
+                            "name": "northeast"
+                        },
+                        {
+                            "exitId": 27,
+                            "name": "northwest"
+                        },
+                        {
+                            "exitId": 17,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 28,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 14,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 16,
+                    "name": "Rotundum meeting place",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Rotundum meeting place|east,north,northeast,northwest,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        0,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 18,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 16,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 17,
+                    "name": "Training room of the Merchant Council",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Training room of the Merchant Council|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        0,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 19,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 17,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 22,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 18,
+                    "name": "The library of the Merchant Council",
+                    "userData": {
+                        "bl": "",
+                        "fp": "The library of the Merchant Council|north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 20,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 18,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 19,
+                    "name": "Joining room of the Gem cutters guild.",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Joining room of the Gem cutters guild.|north,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 21,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 19,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 20,
+                    "name": "Advancement room of the Gem Cutters guild",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Advancement room of the Gem Cutters guild|north,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        3,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 20,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 21,
+                    "name": "Training room of the Gem Cutters guild",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Training room of the Gem Cutters guild|south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        -1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 18,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 23,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 22,
+                    "name": "Joining room of the Gem polishers guild.",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Joining room of the Gem polishers guild.|north,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        -2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 22,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 24,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 23,
+                    "name": "Advancement room of the Gem Polishers guild",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Advancement room of the Gem Polishers guild|north,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        -3,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 23,
+                            "name": "north"
+                        }
+                    ],
+                    "id": 24,
+                    "name": "Training room of the Gem Polishers guild",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Training room of the Gem Polishers guild|north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 16,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 25,
+                    "name": "Voting chambers of the council of merchants.",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Voting chambers of the council of merchants.|south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 16,
+                            "name": "southwest"
+                        }
+                    ],
+                    "id": 26,
+                    "name": "Council shop",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Council shop|southwest",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 16,
+                            "name": "southeast"
+                        }
+                    ],
+                    "id": 27,
+                    "name": "Chambers of Trade.",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Chambers of Trade.|southeast",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        0,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 16,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 28,
+                    "name": "Advancement room of the Merchant Council",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Advancement room of the Merchant Council|east",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        -2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 2,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 30,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 33,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 29,
+                    "name": "A large fancy room",
+                    "stubExits": [
+                        {
+                            "name": "south"
+                        }
+                    ],
+                    "userData": {
+                        "bl": "",
+                        "fp": "A large fancy room|east,north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        -2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 29,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 31,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 30,
+                    "name": "Advancement room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Advancement room|south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        -3,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 30,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 32,
+                            "name": "up"
+                        }
+                    ],
+                    "id": 31,
+                    "name": "The Chamber of the Master Merchants",
+                    "userData": {
+                        "bl": "",
+                        "fp": "The Chamber of the Master Merchants|north,up",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        -3,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 31,
+                            "name": "down"
+                        }
+                    ],
+                    "id": 32,
+                    "name": "Salmoneous' chamber",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Salmoneous' chamber|down",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        -2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 29,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 33,
+                    "name": "Merchant board room.",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Merchant board room.|east",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        -1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 2,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 34,
+                    "name": "Merchant joining room.",
+                    "stubExits": [
+                        {
+                            "name": "north"
+                        }
+                    ],
+                    "userData": {
+                        "bl": "",
+                        "fp": "Merchant joining room.|east,north",
+                        "source": "walk"
+                    }
+                }
+            ]
+        }
+    ],
+    "customEnvColors": [
+        {
+            "color24RGB": [
+                128,
+                0,
+                0
+            ],
+            "id": 257
+        },
+        {
+            "color24RGB": [
+                0,
+                128,
+                0
+            ],
+            "id": 258
+        },
+        {
+            "color24RGB": [
+                128,
+                128,
+                0
+            ],
+            "id": 259
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                128
+            ],
+            "id": 260
+        },
+        {
+            "color24RGB": [
+                128,
+                0,
+                128
+            ],
+            "id": 261
+        },
+        {
+            "color24RGB": [
+                0,
+                128,
+                128
+            ],
+            "id": 262
+        },
+        {
+            "color24RGB": [
+                192,
+                192,
+                192
+            ],
+            "id": 263
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                0
+            ],
+            "id": 264
+        },
+        {
+            "color24RGB": [
+                255,
+                0,
+                0
+            ],
+            "id": 265
+        },
+        {
+            "color24RGB": [
+                0,
+                255,
+                0
+            ],
+            "id": 266
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                0
+            ],
+            "id": 267
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                255
+            ],
+            "id": 268
+        },
+        {
+            "color24RGB": [
+                255,
+                0,
+                255
+            ],
+            "id": 269
+        },
+        {
+            "color24RGB": [
+                0,
+                255,
+                255
+            ],
+            "id": 270
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                255
+            ],
+            "id": 271
+        },
+        {
+            "color24RGB": [
+                128,
+                128,
+                128
+            ],
+            "id": 272
+        }
+    ],
+    "defaultAreaName": "Default Area",
+    "formatVersion": 1,
+    "labelCount": 0,
+    "mapSymbolFontDetails": "Bitstream Vera Sans Mono,12,-1,5,900,0,0,0,0,0,0,0,0,0,0,200,,0,0",
+    "mapSymbolFontFudgeFactor": 1,
+    "onlyMapSymbolFontToBeUsed": false,
+    "playerRoomColors": [
+        {
+            "color24RGB": [
+                255,
+                0,
+                0
+            ]
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                255
+            ]
+        }
+    ],
+    "playerRoomInnerDiameterPercentage": 70,
+    "playerRoomOuterDiameterPercentage": 120,
+    "playerRoomStyle": 0,
+    "playersRoomId": {
+    },
+    "roomCount": 34
+}

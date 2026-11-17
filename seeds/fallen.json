@@ -1,0 +1,902 @@
+{
+    "anonymousAreaName": "Unnamed Area",
+    "areaCount": 2,
+    "areas": [
+        {
+            "id": -1,
+            "name": "Default Area",
+            "roomCount": 0,
+            "rooms": [
+            ]
+        },
+        {
+            "id": 1,
+            "name": "RetroMUD",
+            "roomCount": 27,
+            "rooms": [
+                {
+                    "coordinates": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 2,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 3,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 1,
+                    "name": "Training Cavern",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Training Cavern|guild,north,south",
+                        "named_exits": "guild",
+                        "source": "walk",
+                        "start": "1"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 1,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 2,
+                    "name": "Altar Room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Altar Room|south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        -1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 1,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 4,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 8,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 7,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 3,
+                    "name": "Upper Caverns",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Upper Caverns|east,north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        -1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 5,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 3,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 4,
+                    "name": "Blademaster",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Blademaster|north,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 6,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 4,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 5,
+                    "name": "Blademaster Advancement Alcove",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Blademaster Advancement Alcove|north,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 5,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 6,
+                    "name": "Blademaster Training Cavern",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Blademaster Training Cavern|south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        -2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 3,
+                            "name": "north"
+                        }
+                    ],
+                    "id": 7,
+                    "name": "Ranking",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ranking|north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        -1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 25,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 3,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 27,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 26,
+                            "name": "south"
+                        },
+                        {
+                            "exitId": 9,
+                            "name": "down"
+                        }
+                    ],
+                    "id": 8,
+                    "name": "Upper Caverns",
+                    "stubExits": [
+                        {
+                            "name": "northwest"
+                        }
+                    ],
+                    "userData": {
+                        "bl": "",
+                        "fp": "Upper Caverns|down,east,north,northwest,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        -1,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 18,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 16,
+                            "name": "northeast"
+                        },
+                        {
+                            "exitId": 15,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 23,
+                            "name": "south"
+                        },
+                        {
+                            "exitId": 21,
+                            "name": "southeast"
+                        },
+                        {
+                            "exitId": 8,
+                            "name": "up"
+                        },
+                        {
+                            "exitId": 10,
+                            "name": "down"
+                        }
+                    ],
+                    "id": 9,
+                    "name": "Practice Cavern",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Practice Cavern|down,east,north,northeast,south,southeast,up",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        -1,
+                        -2
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 11,
+                            "name": "northeast"
+                        },
+                        {
+                            "exitId": 13,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 12,
+                            "name": "southeast"
+                        },
+                        {
+                            "exitId": 9,
+                            "name": "up"
+                        }
+                    ],
+                    "id": 10,
+                    "name": "Lower Caverns",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Lower Caverns|northeast,southeast,up,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        0,
+                        -2
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 10,
+                            "name": "southwest"
+                        }
+                    ],
+                    "id": 11,
+                    "name": "Entrance to the Underground",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Entrance to the Underground|southwest,underground",
+                        "named_exits": "underground",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        -2,
+                        -2
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 10,
+                            "name": "northwest"
+                        }
+                    ],
+                    "id": 12,
+                    "name": "Repentance Room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Repentance Room|northwest",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        -1,
+                        -2
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 10,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 14,
+                            "name": "down"
+                        }
+                    ],
+                    "id": 13,
+                    "name": "A long, dark corridor",
+                    "userData": {
+                        "bl": "",
+                        "fp": "A long, dark corridor|down,east",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        -1,
+                        -3
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 13,
+                            "name": "up"
+                        }
+                    ],
+                    "id": 14,
+                    "name": "Shadowlord's Chambers",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadowlord's Chambers|up",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        -1,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 16,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 18,
+                            "name": "northwest"
+                        },
+                        {
+                            "exitId": 9,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 21,
+                            "name": "south"
+                        },
+                        {
+                            "exitId": 23,
+                            "name": "southwest"
+                        }
+                    ],
+                    "id": 15,
+                    "name": "Practice Cavern",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Practice Cavern|north,northwest,south,southwest,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        0,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 17,
+                            "name": "northeast"
+                        },
+                        {
+                            "exitId": 18,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 15,
+                            "name": "south"
+                        },
+                        {
+                            "exitId": 9,
+                            "name": "southwest"
+                        }
+                    ],
+                    "id": 16,
+                    "name": "Practice Cavern",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Practice Cavern|northeast,south,southwest,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        1,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 16,
+                            "name": "southwest"
+                        }
+                    ],
+                    "id": 17,
+                    "name": "Fallen Check-In",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Fallen Check-In|southwest",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        0,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 19,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 16,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 20,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 9,
+                            "name": "south"
+                        },
+                        {
+                            "exitId": 15,
+                            "name": "southeast"
+                        }
+                    ],
+                    "id": 18,
+                    "name": "Practice Cavern",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Practice Cavern|east,north,south,southeast,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        1,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 18,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 19,
+                    "name": "Fallen Barracks",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Fallen Barracks|south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        0,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 18,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 20,
+                    "name": "Cavern Entrance",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Cavern Entrance|east,out",
+                        "named_exits": "out",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        -2,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 15,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 9,
+                            "name": "northwest"
+                        },
+                        {
+                            "exitId": 22,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 23,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 21,
+                    "name": "Practice Cavern",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Practice Cavern|east,north,northwest,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        -2,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 21,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 22,
+                    "name": "Supplies",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Supplies|west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        -2,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 9,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 15,
+                            "name": "northeast"
+                        },
+                        {
+                            "exitId": 21,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 24,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 23,
+                    "name": "Practice Cavern",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Practice Cavern|east,north,northeast,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        -3,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 23,
+                            "name": "north"
+                        }
+                    ],
+                    "id": 24,
+                    "name": "Fallen Barracks",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Fallen Barracks|north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 8,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 25,
+                    "name": "Avatar's Alcove",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Avatar's Alcove|south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        -2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 8,
+                            "name": "north"
+                        }
+                    ],
+                    "id": 26,
+                    "name": "Resting Room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Resting Room|north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        -1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 8,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 27,
+                    "name": "War Room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "War Room|east",
+                        "source": "walk"
+                    }
+                }
+            ]
+        }
+    ],
+    "customEnvColors": [
+        {
+            "color24RGB": [
+                128,
+                0,
+                0
+            ],
+            "id": 257
+        },
+        {
+            "color24RGB": [
+                0,
+                128,
+                0
+            ],
+            "id": 258
+        },
+        {
+            "color24RGB": [
+                128,
+                128,
+                0
+            ],
+            "id": 259
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                128
+            ],
+            "id": 260
+        },
+        {
+            "color24RGB": [
+                128,
+                0,
+                128
+            ],
+            "id": 261
+        },
+        {
+            "color24RGB": [
+                0,
+                128,
+                128
+            ],
+            "id": 262
+        },
+        {
+            "color24RGB": [
+                192,
+                192,
+                192
+            ],
+            "id": 263
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                0
+            ],
+            "id": 264
+        },
+        {
+            "color24RGB": [
+                255,
+                0,
+                0
+            ],
+            "id": 265
+        },
+        {
+            "color24RGB": [
+                0,
+                255,
+                0
+            ],
+            "id": 266
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                0
+            ],
+            "id": 267
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                255
+            ],
+            "id": 268
+        },
+        {
+            "color24RGB": [
+                255,
+                0,
+                255
+            ],
+            "id": 269
+        },
+        {
+            "color24RGB": [
+                0,
+                255,
+                255
+            ],
+            "id": 270
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                255
+            ],
+            "id": 271
+        },
+        {
+            "color24RGB": [
+                128,
+                128,
+                128
+            ],
+            "id": 272
+        }
+    ],
+    "defaultAreaName": "Default Area",
+    "formatVersion": 1,
+    "labelCount": 0,
+    "mapSymbolFontDetails": "Bitstream Vera Sans Mono,12,-1,5,900,0,0,0,0,0,0,0,0,0,0,200,,0,0",
+    "mapSymbolFontFudgeFactor": 1,
+    "onlyMapSymbolFontToBeUsed": false,
+    "playerRoomColors": [
+        {
+            "color24RGB": [
+                255,
+                0,
+                0
+            ]
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                255
+            ]
+        }
+    ],
+    "playerRoomInnerDiameterPercentage": 70,
+    "playerRoomOuterDiameterPercentage": 120,
+    "playerRoomStyle": 0,
+    "playersRoomId": {
+    },
+    "roomCount": 27
+}

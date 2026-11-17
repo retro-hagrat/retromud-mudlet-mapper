@@ -1,0 +1,931 @@
+{
+    "anonymousAreaName": "Unnamed Area",
+    "areaCount": 2,
+    "areas": [
+        {
+            "id": -1,
+            "name": "Default Area",
+            "roomCount": 0,
+            "rooms": [
+            ]
+        },
+        {
+            "id": 1,
+            "name": "RetroMUD",
+            "roomCount": 30,
+            "rooms": [
+                {
+                    "coordinates": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 2,
+                            "name": "north"
+                        }
+                    ],
+                    "id": 1,
+                    "name": "Alchemist Joining Room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Alchemist Joining Room|guild,north",
+                        "named_exits": "guild",
+                        "source": "walk",
+                        "start": "1"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 3,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 30,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 1,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 2,
+                    "name": "Pathway Through the Colony",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Pathway Through the Colony|east,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 29,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 4,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 2,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 28,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 3,
+                    "name": "Pathway Through the Colony",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Pathway Through the Colony|east,north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 7,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 5,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 3,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 8,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 4,
+                    "name": "Pathway Through the Colony",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Pathway Through the Colony|east,north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 6,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 4,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 5,
+                    "name": "Alchemist Wares",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Alchemist Wares|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        4,
+                        1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 5,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 6,
+                    "name": "Component cases",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Component cases|west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 4,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 7,
+                    "name": "The Geologist's Home",
+                    "userData": {
+                        "bl": "",
+                        "fp": "The Geologist's Home|south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 4,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 9,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 28,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 10,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 8,
+                    "name": "Pathway Through the Colony",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Pathway Through the Colony|east,north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 8,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 9,
+                    "name": "The Brewer's Home",
+                    "userData": {
+                        "bl": "",
+                        "fp": "The Brewer's Home|west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 8,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 11,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 27,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 12,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 10,
+                    "name": "Pathway Through the Colony",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Pathway Through the Colony|east,north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        -1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 10,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 11,
+                    "name": "The Soggy Scientist",
+                    "userData": {
+                        "bl": "",
+                        "fp": "The Soggy Scientist|west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 10,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 13,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 26,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 14,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 12,
+                    "name": "Pathway Through the Colony",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Pathway Through the Colony|east,north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        -2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 12,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 13,
+                    "name": "The Glassblower's Home",
+                    "userData": {
+                        "bl": "",
+                        "fp": "The Glassblower's Home|west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -3,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 12,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 15,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 25,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 16,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 14,
+                    "name": "Pathway Through the Colony",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Pathway Through the Colony|east,north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        -3,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 14,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 15,
+                    "name": "Alchemist Advancement",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Alchemist Advancement|west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -4,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 14,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 17,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 24,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 18,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 16,
+                    "name": "The Tower Entrance",
+                    "userData": {
+                        "bl": "",
+                        "fp": "The Tower Entrance|east,north,south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        -4,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 16,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 17,
+                    "name": "Student's Quarters",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Student's Quarters|west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -5,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 16,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 19,
+                            "name": "up"
+                        }
+                    ],
+                    "id": 18,
+                    "name": "Tower Stairs",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Tower Stairs|north,up",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -5,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 20,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 23,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 21,
+                            "name": "up"
+                        },
+                        {
+                            "exitId": 18,
+                            "name": "down"
+                        }
+                    ],
+                    "id": 19,
+                    "name": "Tower Stairs",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Tower Stairs|down,east,up,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        -5,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 19,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 20,
+                    "name": "Student Laboratory",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Student Laboratory|west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -5,
+                        2
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 22,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 19,
+                            "name": "down"
+                        }
+                    ],
+                    "id": 21,
+                    "name": "Tower Stairs",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Tower Stairs|down,east",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        -5,
+                        2
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 21,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 22,
+                    "name": "Fancy laboratory",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Fancy laboratory|west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        -5,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 19,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 23,
+                    "name": "Student Laboratory",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Student Laboratory|east",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        -4,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 16,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 24,
+                    "name": "Servant's Quarters",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Servant's Quarters|east",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        -3,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 14,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 25,
+                    "name": "Alchemist Check Room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Alchemist Check Room|east",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        -2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 12,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 26,
+                    "name": "Laboratory and Home of the Philosopher",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Laboratory and Home of the Philosopher|east",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        -1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 10,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 27,
+                    "name": "The Slugmaker's Home",
+                    "userData": {
+                        "bl": "",
+                        "fp": "The Slugmaker's Home|east",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 3,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 8,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 28,
+                    "name": "Training Room for Alchemy",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Training Room for Alchemy|east,north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 3,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 29,
+                    "name": "The Botanist's Home",
+                    "userData": {
+                        "bl": "",
+                        "fp": "The Botanist's Home|south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 2,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 30,
+                    "name": "End of King's Road",
+                    "userData": {
+                        "bl": "",
+                        "fp": "End of King's Road|east,out",
+                        "named_exits": "out",
+                        "source": "walk"
+                    }
+                }
+            ]
+        }
+    ],
+    "customEnvColors": [
+        {
+            "color24RGB": [
+                128,
+                0,
+                0
+            ],
+            "id": 257
+        },
+        {
+            "color24RGB": [
+                0,
+                128,
+                0
+            ],
+            "id": 258
+        },
+        {
+            "color24RGB": [
+                128,
+                128,
+                0
+            ],
+            "id": 259
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                128
+            ],
+            "id": 260
+        },
+        {
+            "color24RGB": [
+                128,
+                0,
+                128
+            ],
+            "id": 261
+        },
+        {
+            "color24RGB": [
+                0,
+                128,
+                128
+            ],
+            "id": 262
+        },
+        {
+            "color24RGB": [
+                192,
+                192,
+                192
+            ],
+            "id": 263
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                0
+            ],
+            "id": 264
+        },
+        {
+            "color24RGB": [
+                255,
+                0,
+                0
+            ],
+            "id": 265
+        },
+        {
+            "color24RGB": [
+                0,
+                255,
+                0
+            ],
+            "id": 266
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                0
+            ],
+            "id": 267
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                255
+            ],
+            "id": 268
+        },
+        {
+            "color24RGB": [
+                255,
+                0,
+                255
+            ],
+            "id": 269
+        },
+        {
+            "color24RGB": [
+                0,
+                255,
+                255
+            ],
+            "id": 270
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                255
+            ],
+            "id": 271
+        },
+        {
+            "color24RGB": [
+                128,
+                128,
+                128
+            ],
+            "id": 272
+        }
+    ],
+    "defaultAreaName": "Default Area",
+    "formatVersion": 1,
+    "labelCount": 0,
+    "mapSymbolFontDetails": "Bitstream Vera Sans Mono,12,-1,5,900,0,0,0,0,0,0,0,0,0,0,200,,0,0",
+    "mapSymbolFontFudgeFactor": 1,
+    "onlyMapSymbolFontToBeUsed": false,
+    "playerRoomColors": [
+        {
+            "color24RGB": [
+                255,
+                0,
+                0
+            ]
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                255
+            ]
+        }
+    ],
+    "playerRoomInnerDiameterPercentage": 70,
+    "playerRoomOuterDiameterPercentage": 120,
+    "playerRoomStyle": 0,
+    "playersRoomId": {
+    },
+    "roomCount": 30
+}

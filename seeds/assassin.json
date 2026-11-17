@@ -1,0 +1,1755 @@
+{
+    "anonymousAreaName": "Unnamed Area",
+    "areaCount": 2,
+    "areas": [
+        {
+            "id": -1,
+            "name": "Default Area",
+            "roomCount": 0,
+            "rooms": [
+            ]
+        },
+        {
+            "id": 1,
+            "name": "RetroMUD",
+            "roomCount": 63,
+            "rooms": [
+                {
+                    "coordinates": [
+                        0,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 20,
+                            "name": "northeast"
+                        },
+                        {
+                            "exitId": 2,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 1,
+                    "name": "Assassin Training room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Assassin Training room|east,northeast",
+                        "source": "walk",
+                        "start": "1"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 1,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 3,
+                            "name": "down"
+                        }
+                    ],
+                    "id": 2,
+                    "name": "Open pit",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Open pit|down,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        0,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 4,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 61,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 2,
+                            "name": "up"
+                        }
+                    ],
+                    "id": 3,
+                    "name": "Open pit",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Open pit|east,up,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        0,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 12,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 5,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 3,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 18,
+                            "name": "up"
+                        }
+                    ],
+                    "id": 4,
+                    "name": "Open pit",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Open pit|east,north,up,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        0,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 4,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 6,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 5,
+                    "name": "Adventurer Training Room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Adventurer Training Room|south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        -1,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 5,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 7,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 9,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 6,
+                    "name": "Winding Tunnel",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Winding Tunnel|east,north,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        4,
+                        -1,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 8,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 6,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 7,
+                    "name": "Supervisor's Room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Supervisor's Room|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        5,
+                        -1,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 7,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 8,
+                    "name": "Assassin Check Room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Assassin Check Room|west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -1,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 6,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 10,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 9,
+                    "name": "Study Room",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Study Room|east,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -2,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 9,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 11,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 10,
+                    "name": "Recreation Hall",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Recreation Hall|north,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        -2,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 10,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 11,
+                    "name": "A tiny library",
+                    "userData": {
+                        "bl": "",
+                        "fp": "A tiny library|east",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        1,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 13,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 4,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 12,
+                    "name": "Winding Tunnel",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Winding Tunnel|north,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        2,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 14,
+                            "name": "northwest"
+                        },
+                        {
+                            "exitId": 12,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 13,
+                    "name": "Winding Tunnel",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Winding Tunnel|northwest,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        3,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 15,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 13,
+                            "name": "southeast"
+                        }
+                    ],
+                    "id": 14,
+                    "name": "Winding Tunnel",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Winding Tunnel|southeast,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        3,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 16,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 14,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 15,
+                    "name": "Winding Tunnel",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Winding Tunnel|east,north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        4,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 17,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 15,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 16,
+                    "name": "Winding Tunnel",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Winding Tunnel|south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        4,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 17,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 17,
+                    "name": "A hole in the mountain",
+                    "userData": {
+                        "bl": "",
+                        "fp": "A hole in the mountain|leave",
+                        "named_exits": "leave",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        0,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 19,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 4,
+                            "name": "down"
+                        }
+                    ],
+                    "id": 18,
+                    "name": "Open pit",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Open pit|down,north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 20,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 18,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 19,
+                    "name": "Long Tunnel",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Long Tunnel|south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        1,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 21,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 19,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 1,
+                            "name": "southwest"
+                        }
+                    ],
+                    "id": 20,
+                    "name": "Long Tunnel",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Long Tunnel|east,north,southwest",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 59,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 20,
+                            "name": "south"
+                        },
+                        {
+                            "exitId": 22,
+                            "name": "up"
+                        }
+                    ],
+                    "id": 21,
+                    "name": "Guildmaster's Office",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Guildmaster's Office|south,up,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        1,
+                        2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 23,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 41,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 21,
+                            "name": "down"
+                        }
+                    ],
+                    "id": 22,
+                    "name": "Central Passage",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Central Passage|down,east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 24,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 22,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 23,
+                    "name": "Shadow of Man Joining",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Man Joining|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 25,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 23,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 24,
+                    "name": "Shadow of Man Advancement",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Man Advancement|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        4,
+                        2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 24,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 26,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 25,
+                    "name": "Shadow of Man Training",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Man Training|south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        4,
+                        1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 25,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 27,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 26,
+                    "name": "Shadow of Steel Joining",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Steel Joining|north,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 26,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 28,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 27,
+                    "name": "Shadow of Steel Advancement",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Steel Advancement|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 27,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 29,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 28,
+                    "name": "Shadow of Steel Training",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Steel Training|east,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        0,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 28,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 30,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 29,
+                    "name": "Shadow of Time Joining",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Time Joining|east,north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        0,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 31,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 29,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 30,
+                    "name": "Shadow of Time Advancement",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Time Advancement|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        4,
+                        0,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 30,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 32,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 31,
+                    "name": "Shadow of Time Training",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Time Training|south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        4,
+                        -1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 31,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 33,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 32,
+                    "name": "Shadow of Blood Joining",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Blood Joining|north,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        -1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 32,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 34,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 33,
+                    "name": "Shadow of Blood Advancement",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Blood Advancement|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 33,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 35,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 34,
+                    "name": "Shadow of Blood Training",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Blood Training|east,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 34,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 36,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 35,
+                    "name": "Shadow of Vengeance Joining",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Vengeance Joining|east,north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        -2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 37,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 35,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 36,
+                    "name": "Shadow of Vengeance Advancement",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Vengeance Advancement|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        4,
+                        -2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 36,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 38,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 37,
+                    "name": "Shadow of Vengeance Training",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Vengeance Training|south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        4,
+                        -3,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 37,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 39,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 38,
+                    "name": "Shadow of Death Joining",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Death Joining|north,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        3,
+                        -3,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 38,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 40,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 39,
+                    "name": "Shadow of Death Advancement",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Death Advancement|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        2,
+                        -3,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 39,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 40,
+                    "name": "Shadow of Death Training",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Shadow of Death Training|east",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 22,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 42,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 41,
+                    "name": "Ghost Initiate Joining",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Initiate Joining|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 41,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 43,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 42,
+                    "name": "Ghost Initiate Advancement",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Initiate Advancement|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 42,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 44,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 43,
+                    "name": "Ghost Initiate Training",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Initiate Training|east,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 43,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 45,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 44,
+                    "name": "Ghost Apprentice Joining",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Apprentice Joining|east,north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 46,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 44,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 45,
+                    "name": "Ghost Apprentice Advancement",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Apprentice Advancement|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 45,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 47,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 46,
+                    "name": "Ghost Apprentice Training",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Apprentice Training|south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        0,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 46,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 48,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 47,
+                    "name": "Ghost Novice Joining",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Novice Joining|north,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        0,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 47,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 49,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 48,
+                    "name": "Ghost Novice Advancement",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Novice Advancement|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        0,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 48,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 50,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 49,
+                    "name": "Ghost Novice Training",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Novice Training|east,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        -1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 49,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 51,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 50,
+                    "name": "Ghost Veteran Joining",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Veteran Joining|east,north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        -1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 52,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 50,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 51,
+                    "name": "Ghost Veteran Advancement",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Veteran Advancement|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        -1,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 51,
+                            "name": "west"
+                        },
+                        {
+                            "exitId": 53,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 52,
+                    "name": "Ghost Veteran Training",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Veteran Training|south,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        -2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 52,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 54,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 53,
+                    "name": "Ghost Elite Joining",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Elite Joining|north,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        -2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 53,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 55,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 54,
+                    "name": "Ghost Elite Advancement",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Elite Advancement|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        -2,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 54,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 56,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 55,
+                    "name": "Ghost Elite Training",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Elite Training|east,south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        -3,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 55,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 57,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 56,
+                    "name": "Ghost Master Joining",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Master Joining|east,north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        -3,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 58,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 56,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 57,
+                    "name": "Ghost Master Advancement",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Master Advancement|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        -3,
+                        1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 57,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 58,
+                    "name": "Ghost Master Training",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Ghost Master Training|west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        2,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 60,
+                            "name": "north"
+                        },
+                        {
+                            "exitId": 21,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 59,
+                    "name": "Daiyu's Study",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Daiyu's Study|east,north",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        3,
+                        0
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 59,
+                            "name": "south"
+                        }
+                    ],
+                    "id": 60,
+                    "name": "Daiyu's Bedroom",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Daiyu's Bedroom|south",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        0,
+                        0,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 3,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 62,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 61,
+                    "name": "Horace's Adventurer's Supply Shop",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Horace's Adventurer's Supply Shop|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -1,
+                        0,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 61,
+                            "name": "east"
+                        },
+                        {
+                            "exitId": 63,
+                            "name": "west"
+                        }
+                    ],
+                    "id": 62,
+                    "name": "Lefty's Stall",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Lefty's Stall|east,west",
+                        "source": "walk"
+                    }
+                },
+                {
+                    "coordinates": [
+                        -2,
+                        0,
+                        -1
+                    ],
+                    "environment": -1,
+                    "exits": [
+                        {
+                            "exitId": 62,
+                            "name": "east"
+                        }
+                    ],
+                    "id": 63,
+                    "name": "Herbal Stall",
+                    "userData": {
+                        "bl": "",
+                        "fp": "Herbal Stall|east",
+                        "source": "walk"
+                    }
+                }
+            ]
+        }
+    ],
+    "customEnvColors": [
+        {
+            "color24RGB": [
+                128,
+                0,
+                0
+            ],
+            "id": 257
+        },
+        {
+            "color24RGB": [
+                0,
+                128,
+                0
+            ],
+            "id": 258
+        },
+        {
+            "color24RGB": [
+                128,
+                128,
+                0
+            ],
+            "id": 259
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                128
+            ],
+            "id": 260
+        },
+        {
+            "color24RGB": [
+                128,
+                0,
+                128
+            ],
+            "id": 261
+        },
+        {
+            "color24RGB": [
+                0,
+                128,
+                128
+            ],
+            "id": 262
+        },
+        {
+            "color24RGB": [
+                192,
+                192,
+                192
+            ],
+            "id": 263
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                0
+            ],
+            "id": 264
+        },
+        {
+            "color24RGB": [
+                255,
+                0,
+                0
+            ],
+            "id": 265
+        },
+        {
+            "color24RGB": [
+                0,
+                255,
+                0
+            ],
+            "id": 266
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                0
+            ],
+            "id": 267
+        },
+        {
+            "color24RGB": [
+                0,
+                0,
+                255
+            ],
+            "id": 268
+        },
+        {
+            "color24RGB": [
+                255,
+                0,
+                255
+            ],
+            "id": 269
+        },
+        {
+            "color24RGB": [
+                0,
+                255,
+                255
+            ],
+            "id": 270
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                255
+            ],
+            "id": 271
+        },
+        {
+            "color24RGB": [
+                128,
+                128,
+                128
+            ],
+            "id": 272
+        }
+    ],
+    "defaultAreaName": "Default Area",
+    "formatVersion": 1,
+    "labelCount": 0,
+    "mapSymbolFontDetails": "Bitstream Vera Sans Mono,12,-1,5,900,0,0,0,0,0,0,0,0,0,0,200,,0,0",
+    "mapSymbolFontFudgeFactor": 1,
+    "onlyMapSymbolFontToBeUsed": false,
+    "playerRoomColors": [
+        {
+            "color24RGB": [
+                255,
+                0,
+                0
+            ]
+        },
+        {
+            "color24RGB": [
+                255,
+                255,
+                255
+            ]
+        }
+    ],
+    "playerRoomInnerDiameterPercentage": 70,
+    "playerRoomOuterDiameterPercentage": 120,
+    "playerRoomStyle": 0,
+    "playersRoomId": {
+    },
+    "roomCount": 63
+}
