@@ -24,7 +24,7 @@ end
 
 -- Recorded only (no behaviour).
 local MAPPER_API = {
-    "connectExitStub", "setMapZoom", "centerview",
+    "connectExitStub", "setMapZoom", "updateMap", "centerview",
     "saveMap", "loadMap", "saveJsonMap", "loadJsonMap",
     "gotoRoom", "lockRoom", "createMapper",
 }
@@ -241,10 +241,13 @@ end
 function S.fire(name, ...) S.raiseEvent(name, ...) end
 
 -- Load the stitched body file into _G; errors propagate.
-function S.load(path)
+-- The guild maps merge into the map at start-up, which would put 300 rooms under
+-- every tracker test; they are emptied unless a test asks for them (withSeeds).
+function S.load(path, withSeeds)
     local chunk, err = loadfile(path)
     if not chunk then error("load failed: " .. tostring(err), 0) end
     chunk()
+    if not withSeeds then rmap.seedData = {} end
 end
 
 return S

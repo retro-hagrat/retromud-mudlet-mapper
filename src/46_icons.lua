@@ -2,7 +2,7 @@
 -- Contract: after a seed loads, rooms whose title names a service get a one-character
 -- symbol (and colour) so a new player can find joining, advancing, training and so on.
 -- Only seeds listed in I.seeds are marked: each one is checked by hand first, since the
--- rules go by title words. A symbol already on a room is kept; the start room is `S`.
+-- rules go by title words. The start room is `S`.
 -- ASCII only, and nothing religious: the shrines use `*`.
 
 rmap.icons = {}
@@ -32,13 +32,13 @@ function I.symbolFor(title)
     end
 end
 
-function I.apply(seedName)
+-- Mark the rooms `ids` of the seed just merged.
+function I.apply(seedName, ids)
     if not I.seeds[seedName] then return 0 end
     local n = 0
-    for id, title in pairs(getRooms() or {}) do
-        local ch = getRoomUserData(id, "start") == "1" and "S" or I.symbolFor(title)
-        local have = getRoomChar and getRoomChar(id)
-        if ch and (have == nil or have == "") then
+    for _, id in ipairs(ids) do
+        local ch = getRoomUserData(id, "start") == "1" and "S" or I.symbolFor(getRoomName(id))
+        if ch then
             setRoomChar(id, ch)
             local c = I.colors[ch]
             if c then setRoomCharColor(id, c[1], c[2], c[3]) end

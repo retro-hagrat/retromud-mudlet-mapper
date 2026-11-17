@@ -54,13 +54,21 @@ this repo, not in the artifact.
   patterns. Persisted UI geometry.
 - **Map persistence**: `saveMap`/`loadMap` (plus `saveJsonMap` for
   human-readable exports). Maps are built by playing, plus one walked seed per
-  guild start area (`seeds/<guild>.json`, bundled in the package, extracted to
-  `<profile>/retromud/seeds/`). On the first room block of a session with an
-  empty map (a new character), `45_seed` finds the seed whose start-room
-  fingerprint matches (the room marked `userData start = "1"`; `build.py`
-  generates `rmap.seedIndex` and fails on duplicates), loads it, turns mapping
-  on and syncs. No match: a fresh map starts at that room. A map that has
-  rooms is never touched, because `loadJsonMap` replaces the whole map.
+  guild start area (`seeds/<guild>.json`). `build.py` embeds every seed in the
+  package as `rmap.seedData` (rooms, exits, stubs, user data) and generates
+  `rmap.seedIndex` (start-room fingerprint to seed name; it fails on
+  duplicates). `45_seed` merges each seed into the player's map as its own
+  area, named for the guild, at package start and again at the first room block
+  of a session. A merge adds rooms with fresh ids and never touches or replaces
+  a room the player has (`loadJsonMap` replaces the whole map, so it is not
+  used); a guild whose area name already exists is skipped. Map user data
+  `rmap.merged` lists the merged seeds, so a deleted area stays deleted. An
+  empty map at the first merge is a new character: `rmap.welcome` is set to
+  pending, and the first room block finds the start room by fingerprint, syncs,
+  turns mapping on, opens the map pane and sets the zoom (`seedZoom`, per
+  area). Anyone else just resumes mapping. A first room that is in no seed gets
+  a room of its own. `46_icons` puts ASCII symbols on service rooms of the
+  seeds listed in `rmap.icons.seeds`.
   Character-creation rooms (Character Creation, Race Selection, Guild
   Selection) and the one-time "Welcome to RetroMUD" disclaimers room print
   ordinary room blocks around the first login, often in the same segment as the

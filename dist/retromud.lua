@@ -554,18 +554,20 @@ rmap.inits[#rmap.inits + 1] = function()
     rmap.on("rmap.onSegment", T.onSegment)
 end
 
--- 45_seed: first-login map seeding.
--- Contract: on the first room block of a session, if the profile's map has
--- no rooms (a new character), find the guild seed whose start-room
--- fingerprint equals the block's, load it, turn mapping on and put the
--- player on that room. No match: start a fresh map from this room. A map
--- with rooms is never touched (loadJsonMap replaces the whole map); mapping
--- just resumes, unless the player ran `rmap stop`.
--- Seeds ship in the package as seeds/<name>.json; build.py generates
--- rmap.seedIndex (start fingerprint -> seed name) from the rooms marked
--- userData start = "1". Runs after 40_tracker so the tracker has already
--- resolved the block (a spontaneous login block leaves T.pos nil). Creation and
--- first-login rooms never reach it: see settings.ignoreRooms.
+-- 45_seed: put every guild map into the player's map, and welcome a new player.
+-- Contract: build.py embeds each seeds/<guild>.json as rmap.seedData. Whenever the
+-- package starts, and again at the first room block of a session, every seed the
+-- map has not yet had is merged in as its own area (named for the guild). Merging adds
+-- rooms with fresh ids and never touches or replaces a room the player already has
+-- (loadJsonMap replaces the whole map, so it is not used). Which seeds were merged is
+-- kept in the map's user data, so a deleted area is not brought back.
+-- A new character is told apart by an empty map at the first merge: that sets
+-- "rmap.welcome" to pending, and the first room block then puts the player on their
+-- room (a guild start room is in the map), turns mapping on, opens the map pane and
+-- zooms in. Everyone else just resumes mapping, unless they ran `rmap stop`.
+-- Runs after 40_tracker so the tracker has already resolved the block (a spontaneous
+-- login block leaves T.pos nil). Creation and first-login rooms never reach it:
+-- see settings.ignoreRooms.
 
 rmap.seed = { checked = false }
 local S = rmap.seed
@@ -576,8 +578,69 @@ S.PREF = "rmap.mapping"
 function S.remember(choice) setMapUserData(S.PREF, choice) end
 function S.wantsMapping() return getMapUserData(S.PREF) ~= "off" end
 
-function S.path(name)
-    return getMudletHomeDir() .. "/" .. rmap.name .. "/seeds/" .. name .. ".json"
+S.MERGED, S.WELCOME = "rmap.merged", "rmap.welcome"
+
+-- Mudlet direction numbers (the same as settings.dirs)
+local DIRNUM = { north = 1, northeast = 2, northwest = 3, east = 4, west = 5, south = 6,
+    southeast = 7, southwest = 8, up = 9, down = 10, ["in"] = 11, out = 12 }
+
+local function names(csv)
+    local t = {}
+    for n in (csv or ""):gmatch("[^,]+") do t[n] = true end
+    return t
+end
+
+-- One seed as a new area. Returns the number of rooms added.
+function S.mergeSeed(name, d)
+    if getAreaTable()[d.area] then return 0 end   -- the player already has an area of that name
+    local area = addAreaName(d.area)
+    if not area then return 0 end
+    local ids, made = {}, {}
+    for _, r in ipairs(d.rooms) do
+        local id = createRoomID()
+        addRoom(id)
+        setRoomArea(id, area)
+        setRoomName(id, r[2])
+        setRoomCoordinates(id, r[3], r[4], r[5])
+        for k, v in pairs(r[8]) do setRoomUserData(id, k, v) end
+        ids[r[1]], made[#made + 1] = id, id
+    end
+    for _, r in ipairs(d.rooms) do
+        local from = ids[r[1]]
+        for dir, to in pairs(r[6]) do
+            if ids[to] then
+                if DIRNUM[dir] then setExit(from, ids[to], DIRNUM[dir])
+                else addSpecialExit(from, ids[to], dir) end    -- a named exit, e.g. "college"
+            end
+        end
+        for _, dir in ipairs(r[7]) do setExitStub(from, DIRNUM[dir], true) end
+    end
+    rmap.icons.apply(name, made)
+    return #made
+end
+
+-- Merge every seed the map has not had. A new character's map is empty: mark it.
+function S.mergeAll()
+    local done = names(getMapUserData(S.MERGED))
+    local todo = {}
+    for name in pairs(rmap.seedData or {}) do
+        if not done[name] then todo[#todo + 1] = name end
+    end
+    if #todo == 0 then return 0 end
+    table.sort(todo)
+    local fresh = next(getRooms() or {}) == nil and next(done) == nil
+    local n = 0
+    for _, name in ipairs(todo) do
+        n = n + S.mergeSeed(name, rmap.seedData[name])
+        done[name] = true
+    end
+    local list = {}
+    for name in pairs(done) do list[#list + 1] = name end
+    table.sort(list)
+    setMapUserData(S.MERGED, table.concat(list, ","))
+    if fresh then setMapUserData(S.WELCOME, "pending") end
+    if updateMap then updateMap() end
+    return n
 end
 
 function S.onRoom(_, b)
@@ -587,45 +650,41 @@ function S.onRoom(_, b)
     -- (creation, login, registration): none can relate to the map. Left in,
     -- a stale entry would claim the next room block.
     rmap.track.q = {}
-    if next(getRooms() or {}) then
-        -- a returning player: the map is theirs, never replaced; mapping
-        -- resumes unless they stopped it
-        if S.wantsMapping() then
-            rmap.mapping = true
-            rmap.out("mapping is on (rmap stop turns it off)", "ok")
-        end
+    S.mergeAll()                     -- no-op unless the map was not ready at start-up
+    local welcome = getMapUserData(S.WELCOME) == "pending"
+    if welcome then setMapUserData(S.WELCOME, "done") end
+    if not welcome and not S.wantsMapping() then return end
+    rmap.mapping = true
+    if not welcome then
+        rmap.out("mapping is on (rmap stop turns it off)", "ok")
         return
     end
-    local name = rmap.seedIndex and rmap.seedIndex[b.fingerprint]
-    if name then
-        if loadJsonMap(S.path(name)) then
-            rmap.icons.apply(name)
-            if setMapZoom then pcall(setMapZoom, rmap.settings.seedZoom) end
-            rmap.mapping = true
-            rmap.track.pos = rmap.build.find(b.fingerprint)
-            rmap.track.focus()
-            -- unverified: openMapWidget() exists in Mudlet 4.17+
-            if openMapWidget then pcall(openMapWidget) end
-            rmap.out("loaded the " .. name .. " map; mapping is on", "ok")
-            return
-        end
-        rmap.out("could not load the " .. name .. " map", "err")
+    local id = rmap.build.find(b.fingerprint)
+    if not id then
+        rmap.track.adopt(b)
+        rmap.out("new map started here; mapping is on", "ok")
+        return
     end
-    rmap.mapping = true
-    rmap.track.adopt(b)
-    rmap.out("new map started here; mapping is on", "ok")
+    rmap.track.pos = id
+    rmap.track.focus()
+    -- zoom is stored per area: without the area it lands on whichever one was showing
+    if setMapZoom then pcall(setMapZoom, rmap.settings.seedZoom, getRoomArea(id)) end
+    -- unverified: openMapWidget() exists in Mudlet 4.17+
+    if openMapWidget then pcall(openMapWidget) end
+    rmap.out("the guild maps are loaded; mapping is on", "ok")
 end
 
 rmap.inits[#rmap.inits + 1] = function()
     S.checked = false
     rmap.on("rmap.onRoom", S.onRoom)
+    S.mergeAll()
 end
 
 -- 46_icons: ASCII symbols on guild-service rooms of a seeded map.
 -- Contract: after a seed loads, rooms whose title names a service get a one-character
 -- symbol (and colour) so a new player can find joining, advancing, training and so on.
 -- Only seeds listed in I.seeds are marked: each one is checked by hand first, since the
--- rules go by title words. A symbol already on a room is kept; the start room is `S`.
+-- rules go by title words. The start room is `S`.
 -- ASCII only, and nothing religious: the shrines use `*`.
 
 rmap.icons = {}
@@ -655,13 +714,13 @@ function I.symbolFor(title)
     end
 end
 
-function I.apply(seedName)
+-- Mark the rooms `ids` of the seed just merged.
+function I.apply(seedName, ids)
     if not I.seeds[seedName] then return 0 end
     local n = 0
-    for id, title in pairs(getRooms() or {}) do
-        local ch = getRoomUserData(id, "start") == "1" and "S" or I.symbolFor(title)
-        local have = getRoomChar and getRoomChar(id)
-        if ch and (have == nil or have == "") then
+    for _, id in ipairs(ids) do
+        local ch = getRoomUserData(id, "start") == "1" and "S" or I.symbolFor(getRoomName(id))
+        if ch then
             setRoomChar(id, ch)
             local c = I.colors[ch]
             if c then setRoomCharColor(id, c[1], c[2], c[3]) end
@@ -1306,4 +1365,377 @@ rmap.seedIndex = {
     ["Templar Training Hall|adv,east"] = "templar",
     ["Training Cavern|guild,north,south"] = "fallen",
     ["Training room.|adv-guild,south"] = "merchant",
+}
+rmap.seedData = {
+    ["abjurer"] = { area = "Abjurer", rooms = {
+        {1, "Abjurer Quarters", 0, 0, 0, {["west"] = 2}, {}, {["bl"] = "", ["fp"] = "Abjurer Quarters|west", ["source"] = "walk", ["start"] = "1"}},
+        {2, "Hallway", -1, 0, 0, {["northeast"] = 3, ["northwest"] = 4, ["east"] = 1, ["south"] = 5}, {}, {["bl"] = "", ["fp"] = "Hallway|east,northeast,northwest,south", ["source"] = "walk"}},
+        {3, "Abjurer Quarters", 0, 1, 0, {["southwest"] = 2}, {}, {["bl"] = "", ["fp"] = "Abjurer Quarters|southwest", ["source"] = "walk"}},
+        {4, "Abjurer Quarters", -2, 1, 0, {["southeast"] = 2}, {}, {["bl"] = "", ["fp"] = "Abjurer Quarters|southeast", ["source"] = "walk"}},
+        {5, "Hallway", -1, -1, 0, {["north"] = 2, ["west"] = 6}, {}, {["bl"] = "", ["fp"] = "Hallway|north,west", ["source"] = "walk"}},
+        {6, "Meditation Room", -2, -1, 0, {["east"] = 5, ["west"] = 7}, {}, {["bl"] = "", ["fp"] = "Meditation Room|east,west", ["source"] = "walk"}},
+        {7, "Kitchen", -3, -1, 0, {["east"] = 6}, {}, {["bl"] = "", ["fp"] = "Kitchen|east", ["source"] = "walk"}},
+    } },
+    ["alchemist"] = { area = "Alchemist", rooms = {
+        {1, "Alchemist Joining Room", 0, 0, 0, {["north"] = 2}, {}, {["bl"] = "", ["fp"] = "Alchemist Joining Room|guild,north", ["named_exits"] = "guild", ["source"] = "walk", ["start"] = "1"}},
+        {2, "Pathway Through the Colony", 0, 1, 0, {["east"] = 3, ["west"] = 30, ["south"] = 1}, {}, {["bl"] = "", ["fp"] = "Pathway Through the Colony|east,south,west", ["source"] = "walk"}},
+        {3, "Pathway Through the Colony", 1, 1, 0, {["north"] = 29, ["east"] = 4, ["west"] = 2, ["south"] = 28}, {}, {["bl"] = "", ["fp"] = "Pathway Through the Colony|east,north,south,west", ["source"] = "walk"}},
+        {4, "Pathway Through the Colony", 2, 1, 0, {["north"] = 7, ["east"] = 5, ["west"] = 3, ["south"] = 8}, {}, {["bl"] = "", ["fp"] = "Pathway Through the Colony|east,north,south,west", ["source"] = "walk"}},
+        {5, "Alchemist Wares", 3, 1, 0, {["east"] = 6, ["west"] = 4}, {}, {["bl"] = "", ["fp"] = "Alchemist Wares|east,west", ["source"] = "walk"}},
+        {6, "Component cases", 4, 1, 0, {["west"] = 5}, {}, {["bl"] = "", ["fp"] = "Component cases|west", ["source"] = "walk"}},
+        {7, "The Geologist's Home", 2, 2, 0, {["south"] = 4}, {}, {["bl"] = "", ["fp"] = "The Geologist's Home|south", ["source"] = "walk"}},
+        {8, "Pathway Through the Colony", 2, 0, 0, {["north"] = 4, ["east"] = 9, ["west"] = 28, ["south"] = 10}, {}, {["bl"] = "", ["fp"] = "Pathway Through the Colony|east,north,south,west", ["source"] = "walk"}},
+        {9, "The Brewer's Home", 3, 0, 0, {["west"] = 8}, {}, {["bl"] = "", ["fp"] = "The Brewer's Home|west", ["source"] = "walk"}},
+        {10, "Pathway Through the Colony", 2, -1, 0, {["north"] = 8, ["east"] = 11, ["west"] = 27, ["south"] = 12}, {}, {["bl"] = "", ["fp"] = "Pathway Through the Colony|east,north,south,west", ["source"] = "walk"}},
+        {11, "The Soggy Scientist", 3, -1, 0, {["west"] = 10}, {}, {["bl"] = "", ["fp"] = "The Soggy Scientist|west", ["source"] = "walk"}},
+        {12, "Pathway Through the Colony", 2, -2, 0, {["north"] = 10, ["east"] = 13, ["west"] = 26, ["south"] = 14}, {}, {["bl"] = "", ["fp"] = "Pathway Through the Colony|east,north,south,west", ["source"] = "walk"}},
+        {13, "The Glassblower's Home", 3, -2, 0, {["west"] = 12}, {}, {["bl"] = "", ["fp"] = "The Glassblower's Home|west", ["source"] = "walk"}},
+        {14, "Pathway Through the Colony", 2, -3, 0, {["north"] = 12, ["east"] = 15, ["west"] = 25, ["south"] = 16}, {}, {["bl"] = "", ["fp"] = "Pathway Through the Colony|east,north,south,west", ["source"] = "walk"}},
+        {15, "Alchemist Advancement", 3, -3, 0, {["west"] = 14}, {}, {["bl"] = "", ["fp"] = "Alchemist Advancement|west", ["source"] = "walk"}},
+        {16, "The Tower Entrance", 2, -4, 0, {["north"] = 14, ["east"] = 17, ["west"] = 24, ["south"] = 18}, {}, {["bl"] = "", ["fp"] = "The Tower Entrance|east,north,south,west", ["source"] = "walk"}},
+        {17, "Student's Quarters", 3, -4, 0, {["west"] = 16}, {}, {["bl"] = "", ["fp"] = "Student's Quarters|west", ["source"] = "walk"}},
+        {18, "Tower Stairs", 2, -5, 0, {["north"] = 16, ["up"] = 19}, {}, {["bl"] = "", ["fp"] = "Tower Stairs|north,up", ["source"] = "walk"}},
+        {19, "Tower Stairs", 2, -5, 1, {["east"] = 20, ["west"] = 23, ["up"] = 21, ["down"] = 18}, {}, {["bl"] = "", ["fp"] = "Tower Stairs|down,east,up,west", ["source"] = "walk"}},
+        {20, "Student Laboratory", 3, -5, 1, {["west"] = 19}, {}, {["bl"] = "", ["fp"] = "Student Laboratory|west", ["source"] = "walk"}},
+        {21, "Tower Stairs", 2, -5, 2, {["east"] = 22, ["down"] = 19}, {}, {["bl"] = "", ["fp"] = "Tower Stairs|down,east", ["source"] = "walk"}},
+        {22, "Fancy laboratory", 3, -5, 2, {["west"] = 21}, {}, {["bl"] = "", ["fp"] = "Fancy laboratory|west", ["source"] = "walk"}},
+        {23, "Student Laboratory", 1, -5, 1, {["east"] = 19}, {}, {["bl"] = "", ["fp"] = "Student Laboratory|east", ["source"] = "walk"}},
+        {24, "Servant's Quarters", 1, -4, 0, {["east"] = 16}, {}, {["bl"] = "", ["fp"] = "Servant's Quarters|east", ["source"] = "walk"}},
+        {25, "Alchemist Check Room", 1, -3, 0, {["east"] = 14}, {}, {["bl"] = "", ["fp"] = "Alchemist Check Room|east", ["source"] = "walk"}},
+        {26, "Laboratory and Home of the Philosopher", 1, -2, 0, {["east"] = 12}, {}, {["bl"] = "", ["fp"] = "Laboratory and Home of the Philosopher|east", ["source"] = "walk"}},
+        {27, "The Slugmaker's Home", 1, -1, 0, {["east"] = 10}, {}, {["bl"] = "", ["fp"] = "The Slugmaker's Home|east", ["source"] = "walk"}},
+        {28, "Training Room for Alchemy", 1, 0, 0, {["north"] = 3, ["east"] = 8}, {}, {["bl"] = "", ["fp"] = "Training Room for Alchemy|east,north", ["source"] = "walk"}},
+        {29, "The Botanist's Home", 1, 2, 0, {["south"] = 3}, {}, {["bl"] = "", ["fp"] = "The Botanist's Home|south", ["source"] = "walk"}},
+        {30, "End of King's Road", -1, 1, 0, {["east"] = 2}, {}, {["bl"] = "", ["fp"] = "End of King's Road|east,out", ["named_exits"] = "out", ["source"] = "walk"}},
+    } },
+    ["assassin"] = { area = "Assassin", rooms = {
+        {1, "Assassin Training room", 0, 0, 0, {["northeast"] = 20, ["east"] = 2}, {}, {["bl"] = "", ["fp"] = "Assassin Training room|east,northeast", ["source"] = "walk", ["start"] = "1"}},
+        {2, "Open pit", 1, 0, 0, {["west"] = 1, ["down"] = 3}, {}, {["bl"] = "", ["fp"] = "Open pit|down,west", ["source"] = "walk"}},
+        {3, "Open pit", 1, 0, -1, {["east"] = 4, ["west"] = 61, ["up"] = 2}, {}, {["bl"] = "", ["fp"] = "Open pit|east,up,west", ["source"] = "walk"}},
+        {4, "Open pit", 2, 0, -1, {["north"] = 12, ["east"] = 5, ["west"] = 3, ["up"] = 18}, {}, {["bl"] = "", ["fp"] = "Open pit|east,north,up,west", ["source"] = "walk"}},
+        {5, "Adventurer Training Room", 3, 0, -1, {["west"] = 4, ["south"] = 6}, {}, {["bl"] = "", ["fp"] = "Adventurer Training Room|south,west", ["source"] = "walk"}},
+        {6, "Winding Tunnel", 3, -1, -1, {["north"] = 5, ["east"] = 7, ["west"] = 9}, {}, {["bl"] = "", ["fp"] = "Winding Tunnel|east,north,west", ["source"] = "walk"}},
+        {7, "Supervisor's Room", 4, -1, -1, {["east"] = 8, ["west"] = 6}, {}, {["bl"] = "", ["fp"] = "Supervisor's Room|east,west", ["source"] = "walk"}},
+        {8, "Assassin Check Room", 5, -1, -1, {["west"] = 7}, {}, {["bl"] = "", ["fp"] = "Assassin Check Room|west", ["source"] = "walk"}},
+        {9, "Study Room", 2, -1, -1, {["east"] = 6, ["south"] = 10}, {}, {["bl"] = "", ["fp"] = "Study Room|east,south", ["source"] = "walk"}},
+        {10, "Recreation Hall", 2, -2, -1, {["north"] = 9, ["west"] = 11}, {}, {["bl"] = "", ["fp"] = "Recreation Hall|north,west", ["source"] = "walk"}},
+        {11, "A tiny library", 1, -2, -1, {["east"] = 10}, {}, {["bl"] = "", ["fp"] = "A tiny library|east", ["source"] = "walk"}},
+        {12, "Winding Tunnel", 2, 1, -1, {["north"] = 13, ["south"] = 4}, {}, {["bl"] = "", ["fp"] = "Winding Tunnel|north,south", ["source"] = "walk"}},
+        {13, "Winding Tunnel", 2, 2, -1, {["northwest"] = 14, ["south"] = 12}, {}, {["bl"] = "", ["fp"] = "Winding Tunnel|northwest,south", ["source"] = "walk"}},
+        {14, "Winding Tunnel", 1, 3, -1, {["west"] = 15, ["southeast"] = 13}, {}, {["bl"] = "", ["fp"] = "Winding Tunnel|southeast,west", ["source"] = "walk"}},
+        {15, "Winding Tunnel", 0, 3, -1, {["north"] = 16, ["east"] = 14}, {}, {["bl"] = "", ["fp"] = "Winding Tunnel|east,north", ["source"] = "walk"}},
+        {16, "Winding Tunnel", 0, 4, -1, {["west"] = 17, ["south"] = 15}, {}, {["bl"] = "", ["fp"] = "Winding Tunnel|south,west", ["source"] = "walk"}},
+        {17, "A hole in the mountain", -1, 4, -1, {["east"] = 17}, {}, {["bl"] = "", ["fp"] = "A hole in the mountain|leave", ["named_exits"] = "leave", ["source"] = "walk"}},
+        {18, "Open pit", 2, 0, 0, {["north"] = 19, ["down"] = 4}, {}, {["bl"] = "", ["fp"] = "Open pit|down,north", ["source"] = "walk"}},
+        {19, "Long Tunnel", 2, 1, 0, {["west"] = 20, ["south"] = 18}, {}, {["bl"] = "", ["fp"] = "Long Tunnel|south,west", ["source"] = "walk"}},
+        {20, "Long Tunnel", 1, 1, 0, {["north"] = 21, ["east"] = 19, ["southwest"] = 1}, {}, {["bl"] = "", ["fp"] = "Long Tunnel|east,north,southwest", ["source"] = "walk"}},
+        {21, "Guildmaster's Office", 1, 2, 0, {["west"] = 59, ["south"] = 20, ["up"] = 22}, {}, {["bl"] = "", ["fp"] = "Guildmaster's Office|south,up,west", ["source"] = "walk"}},
+        {22, "Central Passage", 1, 2, 1, {["east"] = 23, ["west"] = 41, ["down"] = 21}, {}, {["bl"] = "", ["fp"] = "Central Passage|down,east,west", ["source"] = "walk"}},
+        {23, "Shadow of Man Joining", 2, 2, 1, {["east"] = 24, ["west"] = 22}, {}, {["bl"] = "", ["fp"] = "Shadow of Man Joining|east,west", ["source"] = "walk"}},
+        {24, "Shadow of Man Advancement", 3, 2, 1, {["east"] = 25, ["west"] = 23}, {}, {["bl"] = "", ["fp"] = "Shadow of Man Advancement|east,west", ["source"] = "walk"}},
+        {25, "Shadow of Man Training", 4, 2, 1, {["west"] = 24, ["south"] = 26}, {}, {["bl"] = "", ["fp"] = "Shadow of Man Training|south,west", ["source"] = "walk"}},
+        {26, "Shadow of Steel Joining", 4, 1, 1, {["north"] = 25, ["west"] = 27}, {}, {["bl"] = "", ["fp"] = "Shadow of Steel Joining|north,west", ["source"] = "walk"}},
+        {27, "Shadow of Steel Advancement", 3, 1, 1, {["east"] = 26, ["west"] = 28}, {}, {["bl"] = "", ["fp"] = "Shadow of Steel Advancement|east,west", ["source"] = "walk"}},
+        {28, "Shadow of Steel Training", 2, 1, 1, {["east"] = 27, ["south"] = 29}, {}, {["bl"] = "", ["fp"] = "Shadow of Steel Training|east,south", ["source"] = "walk"}},
+        {29, "Shadow of Time Joining", 2, 0, 1, {["north"] = 28, ["east"] = 30}, {}, {["bl"] = "", ["fp"] = "Shadow of Time Joining|east,north", ["source"] = "walk"}},
+        {30, "Shadow of Time Advancement", 3, 0, 1, {["east"] = 31, ["west"] = 29}, {}, {["bl"] = "", ["fp"] = "Shadow of Time Advancement|east,west", ["source"] = "walk"}},
+        {31, "Shadow of Time Training", 4, 0, 1, {["west"] = 30, ["south"] = 32}, {}, {["bl"] = "", ["fp"] = "Shadow of Time Training|south,west", ["source"] = "walk"}},
+        {32, "Shadow of Blood Joining", 4, -1, 1, {["north"] = 31, ["west"] = 33}, {}, {["bl"] = "", ["fp"] = "Shadow of Blood Joining|north,west", ["source"] = "walk"}},
+        {33, "Shadow of Blood Advancement", 3, -1, 1, {["east"] = 32, ["west"] = 34}, {}, {["bl"] = "", ["fp"] = "Shadow of Blood Advancement|east,west", ["source"] = "walk"}},
+        {34, "Shadow of Blood Training", 2, -1, 1, {["east"] = 33, ["south"] = 35}, {}, {["bl"] = "", ["fp"] = "Shadow of Blood Training|east,south", ["source"] = "walk"}},
+        {35, "Shadow of Vengeance Joining", 2, -2, 1, {["north"] = 34, ["east"] = 36}, {}, {["bl"] = "", ["fp"] = "Shadow of Vengeance Joining|east,north", ["source"] = "walk"}},
+        {36, "Shadow of Vengeance Advancement", 3, -2, 1, {["east"] = 37, ["west"] = 35}, {}, {["bl"] = "", ["fp"] = "Shadow of Vengeance Advancement|east,west", ["source"] = "walk"}},
+        {37, "Shadow of Vengeance Training", 4, -2, 1, {["west"] = 36, ["south"] = 38}, {}, {["bl"] = "", ["fp"] = "Shadow of Vengeance Training|south,west", ["source"] = "walk"}},
+        {38, "Shadow of Death Joining", 4, -3, 1, {["north"] = 37, ["west"] = 39}, {}, {["bl"] = "", ["fp"] = "Shadow of Death Joining|north,west", ["source"] = "walk"}},
+        {39, "Shadow of Death Advancement", 3, -3, 1, {["east"] = 38, ["west"] = 40}, {}, {["bl"] = "", ["fp"] = "Shadow of Death Advancement|east,west", ["source"] = "walk"}},
+        {40, "Shadow of Death Training", 2, -3, 1, {["east"] = 39}, {}, {["bl"] = "", ["fp"] = "Shadow of Death Training|east", ["source"] = "walk"}},
+        {41, "Ghost Initiate Joining", 0, 2, 1, {["east"] = 22, ["west"] = 42}, {}, {["bl"] = "", ["fp"] = "Ghost Initiate Joining|east,west", ["source"] = "walk"}},
+        {42, "Ghost Initiate Advancement", -1, 2, 1, {["east"] = 41, ["west"] = 43}, {}, {["bl"] = "", ["fp"] = "Ghost Initiate Advancement|east,west", ["source"] = "walk"}},
+        {43, "Ghost Initiate Training", -2, 2, 1, {["east"] = 42, ["south"] = 44}, {}, {["bl"] = "", ["fp"] = "Ghost Initiate Training|east,south", ["source"] = "walk"}},
+        {44, "Ghost Apprentice Joining", -2, 1, 1, {["north"] = 43, ["east"] = 45}, {}, {["bl"] = "", ["fp"] = "Ghost Apprentice Joining|east,north", ["source"] = "walk"}},
+        {45, "Ghost Apprentice Advancement", -1, 1, 1, {["east"] = 46, ["west"] = 44}, {}, {["bl"] = "", ["fp"] = "Ghost Apprentice Advancement|east,west", ["source"] = "walk"}},
+        {46, "Ghost Apprentice Training", 0, 1, 1, {["west"] = 45, ["south"] = 47}, {}, {["bl"] = "", ["fp"] = "Ghost Apprentice Training|south,west", ["source"] = "walk"}},
+        {47, "Ghost Novice Joining", 0, 0, 1, {["north"] = 46, ["west"] = 48}, {}, {["bl"] = "", ["fp"] = "Ghost Novice Joining|north,west", ["source"] = "walk"}},
+        {48, "Ghost Novice Advancement", -1, 0, 1, {["east"] = 47, ["west"] = 49}, {}, {["bl"] = "", ["fp"] = "Ghost Novice Advancement|east,west", ["source"] = "walk"}},
+        {49, "Ghost Novice Training", -2, 0, 1, {["east"] = 48, ["south"] = 50}, {}, {["bl"] = "", ["fp"] = "Ghost Novice Training|east,south", ["source"] = "walk"}},
+        {50, "Ghost Veteran Joining", -2, -1, 1, {["north"] = 49, ["east"] = 51}, {}, {["bl"] = "", ["fp"] = "Ghost Veteran Joining|east,north", ["source"] = "walk"}},
+        {51, "Ghost Veteran Advancement", -1, -1, 1, {["east"] = 52, ["west"] = 50}, {}, {["bl"] = "", ["fp"] = "Ghost Veteran Advancement|east,west", ["source"] = "walk"}},
+        {52, "Ghost Veteran Training", 0, -1, 1, {["west"] = 51, ["south"] = 53}, {}, {["bl"] = "", ["fp"] = "Ghost Veteran Training|south,west", ["source"] = "walk"}},
+        {53, "Ghost Elite Joining", 0, -2, 1, {["north"] = 52, ["west"] = 54}, {}, {["bl"] = "", ["fp"] = "Ghost Elite Joining|north,west", ["source"] = "walk"}},
+        {54, "Ghost Elite Advancement", -1, -2, 1, {["east"] = 53, ["west"] = 55}, {}, {["bl"] = "", ["fp"] = "Ghost Elite Advancement|east,west", ["source"] = "walk"}},
+        {55, "Ghost Elite Training", -2, -2, 1, {["east"] = 54, ["south"] = 56}, {}, {["bl"] = "", ["fp"] = "Ghost Elite Training|east,south", ["source"] = "walk"}},
+        {56, "Ghost Master Joining", -2, -3, 1, {["north"] = 55, ["east"] = 57}, {}, {["bl"] = "", ["fp"] = "Ghost Master Joining|east,north", ["source"] = "walk"}},
+        {57, "Ghost Master Advancement", -1, -3, 1, {["east"] = 58, ["west"] = 56}, {}, {["bl"] = "", ["fp"] = "Ghost Master Advancement|east,west", ["source"] = "walk"}},
+        {58, "Ghost Master Training", 0, -3, 1, {["west"] = 57}, {}, {["bl"] = "", ["fp"] = "Ghost Master Training|west", ["source"] = "walk"}},
+        {59, "Daiyu's Study", 0, 2, 0, {["north"] = 60, ["east"] = 21}, {}, {["bl"] = "", ["fp"] = "Daiyu's Study|east,north", ["source"] = "walk"}},
+        {60, "Daiyu's Bedroom", 0, 3, 0, {["south"] = 59}, {}, {["bl"] = "", ["fp"] = "Daiyu's Bedroom|south", ["source"] = "walk"}},
+        {61, "Horace's Adventurer's Supply Shop", 0, 0, -1, {["east"] = 3, ["west"] = 62}, {}, {["bl"] = "", ["fp"] = "Horace's Adventurer's Supply Shop|east,west", ["source"] = "walk"}},
+        {62, "Lefty's Stall", -1, 0, -1, {["east"] = 61, ["west"] = 63}, {}, {["bl"] = "", ["fp"] = "Lefty's Stall|east,west", ["source"] = "walk"}},
+        {63, "Herbal Stall", -2, 0, -1, {["east"] = 62}, {}, {["bl"] = "", ["fp"] = "Herbal Stall|east", ["source"] = "walk"}},
+    } },
+    ["bard"] = { area = "Bard", rooms = {
+        {1, "Stage", 0, 0, 0, {["north"] = 2}, {}, {["bl"] = "", ["fp"] = "Stage|north,suthnas", ["named_exits"] = "suthnas", ["source"] = "walk", ["start"] = "1"}},
+        {2, "Drunken Wench Tavern", 0, 1, 0, {["south"] = 2}, {"east", "north", "west"}, {["bl"] = "", ["fp"] = "Drunken Wench Tavern|east,north,south,west", ["source"] = "walk"}},
+    } },
+    ["biomancer"] = { area = "Biomancer", rooms = {
+        {1, "Biomancer Library", 0, 0, 0, {["south"] = 2}, {}, {["bl"] = "", ["fp"] = "Biomancer Library|south", ["source"] = "walk", ["start"] = "1"}},
+        {2, "Biomancer Entrance", 0, -1, 0, {["north"] = 1, ["up"] = 4}, {"east"}, {["bl"] = "north", ["fp"] = "Biomancer Entrance|east,north,up", ["source"] = "walk"}},
+        {3, "Biomancer Check Room", 0, 0, 2, {["south"] = 5}, {}, {["bl"] = "", ["fp"] = "Biomancer Check Room|south", ["source"] = "walk"}},
+        {4, "Initiation Room", 0, -1, 1, {["up"] = 5, ["down"] = 2, ["college"] = 8}, {}, {["bl"] = "down", ["fp"] = "Initiation Room|adv,college,down,up", ["source"] = "walk"}},
+        {5, "Biomancers' Lecture Hall", 0, -1, 2, {["north"] = 3, ["up"] = 6, ["down"] = 4}, {}, {["bl"] = "", ["fp"] = "Biomancers' Lecture Hall|down,north,up", ["source"] = "walk"}},
+        {6, "Advancement Room", 0, -1, 3, {["up"] = 7, ["down"] = 5}, {}, {["bl"] = "", ["fp"] = "Advancement Room|down,up", ["source"] = "walk"}},
+        {7, "Mantikor's Medical Supplies", 0, -1, 4, {["down"] = 6}, {}, {["bl"] = "", ["fp"] = "Mantikor's Medical Supplies|down", ["source"] = "walk"}},
+        {8, "The Lobby of the Biomantic College", -1, -1, 1, {["north"] = 27, ["east"] = 26, ["west"] = 28, ["up"] = 9, ["out"] = 4}, {}, {["bl"] = "", ["fp"] = "The Lobby of the Biomantic College|east,north,out,up,west", ["source"] = "walk"}},
+        {9, "A very clean hallway", -1, -1, 2, {["north"] = 11, ["east"] = 10, ["west"] = 14, ["south"] = 13, ["up"] = 17, ["down"] = 8}, {}, {["bl"] = "", ["fp"] = "A very clean hallway|down,east,north,south,up,west", ["source"] = "walk"}},
+        {10, "A recovery ward", 0, -2, 2, {["north"] = 12, ["west"] = 9}, {}, {["bl"] = "", ["fp"] = "A recovery ward|north,west", ["source"] = "walk"}},
+        {11, "A very clean hallway", -1, 0, 2, {["east"] = 12, ["south"] = 9}, {}, {["bl"] = "", ["fp"] = "A very clean hallway|east,south", ["source"] = "walk"}},
+        {12, "A recovery ward", 1, -2, 2, {["west"] = 11, ["south"] = 10}, {}, {["bl"] = "", ["fp"] = "A recovery ward|south,west", ["source"] = "walk"}},
+        {13, "A testing room", -1, -2, 2, {["north"] = 9, ["east"] = 15}, {}, {["bl"] = "", ["fp"] = "A testing room|east,north", ["source"] = "walk"}},
+        {14, "A surgery prep room", -2, -1, 2, {["north"] = 16, ["east"] = 9}, {}, {["bl"] = "", ["fp"] = "A surgery prep room|east,north", ["source"] = "walk"}},
+        {15, "Advanced Studies Admissions Room", -1, -3, 2, {["west"] = 13}, {}, {["bl"] = "", ["fp"] = "Advanced Studies Admissions Room|west", ["source"] = "walk"}},
+        {16, "An operating room", -2, 0, 2, {["south"] = 14}, {}, {["bl"] = "", ["fp"] = "An operating room|south", ["source"] = "walk"}},
+        {17, "Medicus Tonstrinus Joining", -1, -1, 3, {["north"] = 19, ["east"] = 18, ["west"] = 21, ["south"] = 20, ["down"] = 9}, {}, {["bl"] = "", ["fp"] = "Medicus Tonstrinus Joining|down,east,north,south,west", ["source"] = "walk"}},
+        {18, "Medicus Tonstrinus Advancement", 0, -2, 3, {["north"] = 22, ["west"] = 17, ["south"] = 25}, {}, {["bl"] = "", ["fp"] = "Medicus Tonstrinus Advancement|north,south,west", ["source"] = "walk"}},
+        {19, "Medicus Chirurgus Joining", -1, 0, 3, {["east"] = 22, ["west"] = 23, ["south"] = 17}, {}, {["bl"] = "", ["fp"] = "Medicus Chirurgus Joining|east,south,west", ["source"] = "walk"}},
+        {20, "Medicus Medice Joining", -1, -2, 3, {["north"] = 17, ["east"] = 25, ["west"] = 24}, {}, {["bl"] = "", ["fp"] = "Medicus Medice Joining|east,north,west", ["source"] = "walk"}},
+        {21, "Medicus Tonstrinus Training", -2, -1, 3, {["north"] = 23, ["east"] = 17, ["south"] = 24}, {}, {["bl"] = "", ["fp"] = "Medicus Tonstrinus Training|east,north,south", ["source"] = "walk"}},
+        {22, "Medicus Chirurgus Advancement", 1, -2, 3, {["west"] = 19, ["south"] = 18}, {}, {["bl"] = "south", ["fp"] = "Medicus Chirurgus Advancement|south,west", ["source"] = "walk"}},
+        {23, "Medicus Chirurgus Training", -2, 0, 3, {["east"] = 19, ["south"] = 21}, {}, {["bl"] = "", ["fp"] = "Medicus Chirurgus Training|east,south", ["source"] = "walk"}},
+        {24, "Medicus Medice Training", -2, -2, 3, {["north"] = 21, ["east"] = 20}, {}, {["bl"] = "", ["fp"] = "Medicus Medice Training|east,north", ["source"] = "walk"}},
+        {25, "Medicus Medice Advancement", -1, -3, 3, {["north"] = 18, ["west"] = 20}, {}, {["bl"] = "", ["fp"] = "Medicus Medice Advancement|north,west", ["source"] = "walk"}},
+        {26, "Dormitory Wing", -1, -2, 1, {["east"] = 29, ["west"] = 8}, {}, {["bl"] = "", ["fp"] = "Dormitory Wing|east,west", ["source"] = "walk"}},
+        {27, "Main Hall of the Library", -1, 0, 1, {["east"] = 30, ["west"] = 31, ["south"] = 8}, {}, {["bl"] = "", ["fp"] = "Main Hall of the Library|east,south,west", ["source"] = "walk"}},
+        {28, "The Administrative Wing of the College", -2, -1, 1, {["east"] = 8}, {}, {["bl"] = "", ["fp"] = "The Administrative Wing of the College|east", ["source"] = "walk"}},
+        {29, "Dormitory Wing", 0, -2, 1, {["west"] = 26}, {}, {["bl"] = "", ["fp"] = "Dormitory Wing|west", ["source"] = "walk"}},
+        {30, "East Wing of the Library", 0, 0, 1, {["west"] = 27}, {}, {["bl"] = "", ["fp"] = "East Wing of the Library|west", ["source"] = "walk"}},
+        {31, "West Wing of the Library", -2, 0, 1, {["east"] = 27}, {}, {["bl"] = "", ["fp"] = "West Wing of the Library|east", ["source"] = "walk"}},
+    } },
+    ["cultist"] = { area = "Cultist", rooms = {
+        {1, "Chapel of Arcane Study", 0, 0, 0, {["west"] = 2}, {}, {["bl"] = "", ["fp"] = "Chapel of Arcane Study|west", ["source"] = "walk", ["start"] = "1"}},
+        {2, "The nave", -1, 0, 0, {["north"] = 3, ["east"] = 1, ["west"] = 11}, {}, {["bl"] = "", ["fp"] = "The nave|east,north,west", ["source"] = "walk"}},
+        {3, "A Hallway", -1, 1, 0, {["north"] = 4, ["south"] = 2}, {}, {["bl"] = "", ["fp"] = "A Hallway|north,south", ["source"] = "walk"}},
+        {4, "A shallow pool", -1, 2, 0, {["south"] = 3, ["up"] = 5}, {}, {["bl"] = "", ["fp"] = "A shallow pool|south,up", ["source"] = "walk"}},
+        {5, "Vile Heart Joining", -1, 2, 1, {["east"] = 6, ["down"] = 4}, {}, {["bl"] = "", ["fp"] = "Vile Heart Joining|down,east", ["source"] = "walk"}},
+        {6, "Vile Heart Advancement", 0, 2, 1, {["east"] = 7, ["west"] = 5}, {}, {["bl"] = "", ["fp"] = "Vile Heart Advancement|east,west", ["source"] = "walk"}},
+        {7, "Vile Heart Training", 1, 2, 1, {["north"] = 8, ["west"] = 6}, {}, {["bl"] = "", ["fp"] = "Vile Heart Training|north,west", ["source"] = "walk"}},
+        {8, "Vile Soul Joining", 1, 3, 1, {["east"] = 9, ["south"] = 7}, {}, {["bl"] = "", ["fp"] = "Vile Soul Joining|east,south", ["source"] = "walk"}},
+        {9, "Vile Soul Advancement", 2, 3, 1, {["east"] = 10, ["west"] = 8}, {}, {["bl"] = "", ["fp"] = "Vile Soul Advancement|east,west", ["source"] = "walk"}},
+        {10, "Vile Soul Training", 3, 3, 1, {["west"] = 9}, {}, {["bl"] = "", ["fp"] = "Vile Soul Training|west", ["source"] = "walk"}},
+        {11, "Altar Room", -2, 0, 0, {["east"] = 2, ["west"] = 12}, {}, {["bl"] = "", ["fp"] = "Altar Room|east,west", ["source"] = "walk"}},
+        {12, "Altar of Repentence", -3, 0, 0, {["east"] = 11}, {}, {["bl"] = "", ["fp"] = "Altar of Repentence|east", ["source"] = "walk"}},
+    } },
+    ["druid"] = { area = "Druid", rooms = {
+        {1, "A forest spring ~ Druid training room", 0, 0, 0, {["north"] = 4, ["east"] = 2, ["south"] = 6, ["southeast"] = 7}, {}, {["bl"] = "", ["fp"] = "A forest spring ~ Druid training room|adv,east,north,south,southeast,tree", ["named_exits"] = "adv,tree", ["source"] = "walk", ["start"] = "1"}},
+        {2, "The circle of redwoods", 1, 0, 0, {["north"] = 3, ["west"] = 1}, {}, {["bl"] = "", ["fp"] = "The circle of redwoods|north,west", ["source"] = "walk"}},
+        {3, "Alcove in the forest ~ Druid Check Room", 1, 1, 0, {["west"] = 4, ["south"] = 2}, {}, {["bl"] = "", ["fp"] = "Alcove in the forest ~ Druid Check Room|south,west", ["source"] = "walk"}},
+        {4, "A circle of standing stones ~ Level advancement", 0, 1, 0, {["north"] = 5, ["east"] = 3, ["south"] = 1}, {}, {["bl"] = "", ["fp"] = "A circle of standing stones ~ Level advancement|east,north,south", ["source"] = "walk"}},
+        {5, "Circle of Life", 0, 2, 0, {["south"] = 4}, {}, {["bl"] = "", ["fp"] = "Circle of Life|south", ["source"] = "walk"}},
+        {6, "A small wooded path ~ Druid guild", 0, -1, 0, {["north"] = 1}, {"west"}, {["bl"] = "", ["fp"] = "A small wooded path ~ Druid guild|north,west", ["source"] = "walk"}},
+        {7, "A small wooden shack ~ Guild store", 1, -1, 0, {["northwest"] = 1}, {}, {["bl"] = "", ["fp"] = "A small wooden shack ~ Guild store|northwest", ["source"] = "walk"}},
+    } },
+    ["fallen"] = { area = "Fallen", rooms = {
+        {1, "Training Cavern", 0, 0, 0, {["north"] = 2, ["south"] = 3}, {}, {["bl"] = "", ["fp"] = "Training Cavern|guild,north,south", ["named_exits"] = "guild", ["source"] = "walk", ["start"] = "1"}},
+        {2, "Altar Room", 0, 1, 0, {["south"] = 1}, {}, {["bl"] = "", ["fp"] = "Altar Room|south", ["source"] = "walk"}},
+        {3, "Upper Caverns", 0, -1, 0, {["north"] = 1, ["east"] = 4, ["west"] = 8, ["south"] = 7}, {}, {["bl"] = "", ["fp"] = "Upper Caverns|east,north,south,west", ["source"] = "walk"}},
+        {4, "Blademaster", 1, -1, 0, {["north"] = 5, ["west"] = 3}, {}, {["bl"] = "", ["fp"] = "Blademaster|north,west", ["source"] = "walk"}},
+        {5, "Blademaster Advancement Alcove", 1, 0, 0, {["north"] = 6, ["south"] = 4}, {}, {["bl"] = "", ["fp"] = "Blademaster Advancement Alcove|north,south", ["source"] = "walk"}},
+        {6, "Blademaster Training Cavern", 1, 1, 0, {["south"] = 5}, {}, {["bl"] = "", ["fp"] = "Blademaster Training Cavern|south", ["source"] = "walk"}},
+        {7, "Ranking", 0, -2, 0, {["north"] = 3}, {}, {["bl"] = "", ["fp"] = "Ranking|north", ["source"] = "walk"}},
+        {8, "Upper Caverns", -1, -1, 0, {["north"] = 25, ["east"] = 3, ["west"] = 27, ["south"] = 26, ["down"] = 9}, {"northwest"}, {["bl"] = "", ["fp"] = "Upper Caverns|down,east,north,northwest,south,west", ["source"] = "walk"}},
+        {9, "Practice Cavern", -1, -1, -1, {["north"] = 18, ["northeast"] = 16, ["east"] = 15, ["south"] = 23, ["southeast"] = 21, ["up"] = 8, ["down"] = 10}, {}, {["bl"] = "", ["fp"] = "Practice Cavern|down,east,north,northeast,south,southeast,up", ["source"] = "walk"}},
+        {10, "Lower Caverns", -1, -1, -2, {["northeast"] = 11, ["west"] = 13, ["southeast"] = 12, ["up"] = 9}, {}, {["bl"] = "", ["fp"] = "Lower Caverns|northeast,southeast,up,west", ["source"] = "walk"}},
+        {11, "Entrance to the Underground", 0, 0, -2, {["southwest"] = 10}, {}, {["bl"] = "", ["fp"] = "Entrance to the Underground|southwest,underground", ["named_exits"] = "underground", ["source"] = "walk"}},
+        {12, "Repentance Room", 0, -2, -2, {["northwest"] = 10}, {}, {["bl"] = "", ["fp"] = "Repentance Room|northwest", ["source"] = "walk"}},
+        {13, "A long, dark corridor", -2, -1, -2, {["east"] = 10, ["down"] = 14}, {}, {["bl"] = "", ["fp"] = "A long, dark corridor|down,east", ["source"] = "walk"}},
+        {14, "Shadowlord's Chambers", -2, -1, -3, {["up"] = 13}, {}, {["bl"] = "", ["fp"] = "Shadowlord's Chambers|up", ["source"] = "walk"}},
+        {15, "Practice Cavern", 0, -1, -1, {["north"] = 16, ["northwest"] = 18, ["west"] = 9, ["south"] = 21, ["southwest"] = 23}, {}, {["bl"] = "", ["fp"] = "Practice Cavern|north,northwest,south,southwest,west", ["source"] = "walk"}},
+        {16, "Practice Cavern", 0, 0, -1, {["northeast"] = 17, ["west"] = 18, ["south"] = 15, ["southwest"] = 9}, {}, {["bl"] = "", ["fp"] = "Practice Cavern|northeast,south,southwest,west", ["source"] = "walk"}},
+        {17, "Fallen Check-In", 1, 1, -1, {["southwest"] = 16}, {}, {["bl"] = "", ["fp"] = "Fallen Check-In|southwest", ["source"] = "walk"}},
+        {18, "Practice Cavern", -1, 0, -1, {["north"] = 19, ["east"] = 16, ["west"] = 20, ["south"] = 9, ["southeast"] = 15}, {}, {["bl"] = "", ["fp"] = "Practice Cavern|east,north,south,southeast,west", ["source"] = "walk"}},
+        {19, "Fallen Barracks", -1, 1, -1, {["south"] = 18}, {}, {["bl"] = "", ["fp"] = "Fallen Barracks|south", ["source"] = "walk"}},
+        {20, "Cavern Entrance", -2, 0, -1, {["east"] = 18}, {}, {["bl"] = "", ["fp"] = "Cavern Entrance|east,out", ["named_exits"] = "out", ["source"] = "walk"}},
+        {21, "Practice Cavern", 0, -2, -1, {["north"] = 15, ["northwest"] = 9, ["east"] = 22, ["west"] = 23}, {}, {["bl"] = "", ["fp"] = "Practice Cavern|east,north,northwest,west", ["source"] = "walk"}},
+        {22, "Supplies", 1, -2, -1, {["west"] = 21}, {}, {["bl"] = "", ["fp"] = "Supplies|west", ["source"] = "walk"}},
+        {23, "Practice Cavern", -1, -2, -1, {["north"] = 9, ["northeast"] = 15, ["east"] = 21, ["south"] = 24}, {}, {["bl"] = "", ["fp"] = "Practice Cavern|east,north,northeast,south", ["source"] = "walk"}},
+        {24, "Fallen Barracks", -1, -3, -1, {["north"] = 23}, {}, {["bl"] = "", ["fp"] = "Fallen Barracks|north", ["source"] = "walk"}},
+        {25, "Avatar's Alcove", -1, 0, 0, {["south"] = 8}, {}, {["bl"] = "", ["fp"] = "Avatar's Alcove|south", ["source"] = "walk"}},
+        {26, "Resting Room", -1, -2, 0, {["north"] = 8}, {}, {["bl"] = "", ["fp"] = "Resting Room|north", ["source"] = "walk"}},
+        {27, "War Room", -2, -1, 0, {["east"] = 8}, {}, {["bl"] = "", ["fp"] = "War Room|east", ["source"] = "walk"}},
+    } },
+    ["fighter"] = { area = "Fighter", rooms = {
+        {1, "Fighter training room", 0, 0, 0, {["west"] = 2}, {}, {["bl"] = "", ["fp"] = "Fighter training room|adv,west", ["named_exits"] = "adv", ["source"] = "walk", ["start"] = "1"}},
+        {2, "Great hall", -1, 0, 0, {["north"] = 3, ["east"] = 1, ["west"] = 33, ["south"] = 26}, {}, {["bl"] = "", ["fp"] = "Great hall|east,north,south,west", ["source"] = "walk"}},
+        {3, "Small hallway", -1, 1, 0, {["north"] = 4, ["west"] = 24, ["south"] = 2}, {}, {["bl"] = "", ["fp"] = "Small hallway|north,south,west", ["source"] = "walk"}},
+        {4, "Small hallway", -1, 2, 0, {["east"] = 5, ["south"] = 3}, {"west"}, {["bl"] = "", ["fp"] = "Small hallway|east,south,west", ["source"] = "walk"}},
+        {5, "Hallway leading to the battle grounds", 0, 2, 0, {["north"] = 6, ["west"] = 4}, {}, {["bl"] = "", ["fp"] = "Hallway leading to the battle grounds|north,west", ["source"] = "walk"}},
+        {6, "Entrance to the battle grounds", 0, 3, 0, {["east"] = 7, ["west"] = 18, ["south"] = 5}, {}, {["bl"] = "", ["fp"] = "Entrance to the battle grounds|east,south,west", ["source"] = "walk"}},
+        {7, "East of the battle ground entrance", 1, 3, 0, {["north"] = 14, ["east"] = 8, ["west"] = 6}, {}, {["bl"] = "", ["fp"] = "East of the battle ground entrance|east,north,west", ["source"] = "walk"}},
+        {8, "East of the battle ground entrance", 2, 3, 0, {["east"] = 9, ["west"] = 7}, {}, {["bl"] = "", ["fp"] = "East of the battle ground entrance|east,west", ["source"] = "walk"}},
+        {9, "Southeast corner of the battle grounds", 3, 3, 0, {["north"] = 10, ["west"] = 8}, {}, {["bl"] = "", ["fp"] = "Southeast corner of the battle grounds|north,west", ["source"] = "walk"}},
+        {10, "Between the far east wall and the east stone column", 3, 4, 0, {["north"] = 11, ["south"] = 9}, {}, {["bl"] = "", ["fp"] = "Between the far east wall and the east stone column|north,south", ["source"] = "walk"}},
+        {11, "Northeast corner of the battle grounds", 3, 5, 0, {["west"] = 12, ["south"] = 10}, {}, {["bl"] = "", ["fp"] = "Northeast corner of the battle grounds|south,west", ["source"] = "walk"}},
+        {12, "Near the northeast corner of the battle grounds", 2, 5, 0, {["east"] = 11, ["west"] = 13}, {}, {["bl"] = "", ["fp"] = "Near the northeast corner of the battle grounds|east,west", ["source"] = "walk"}},
+        {13, "Battle ground room", 1, 5, 0, {["east"] = 12, ["west"] = 15, ["south"] = 14}, {}, {["bl"] = "", ["fp"] = "Battle ground room|east,south,west", ["source"] = "walk"}},
+        {14, "Between the two stone columns", 1, 4, 0, {["north"] = 13, ["south"] = 7}, {}, {["bl"] = "", ["fp"] = "Between the two stone columns|north,south", ["source"] = "walk"}},
+        {15, "Battle ground room", 0, 5, 0, {["east"] = 13, ["west"] = 16}, {}, {["bl"] = "", ["fp"] = "Battle ground room|east,west", ["source"] = "walk"}},
+        {16, "Battle ground room", -1, 5, 0, {["east"] = 15, ["west"] = 23, ["south"] = 17}, {}, {["bl"] = "", ["fp"] = "Battle ground room|east,south,west", ["source"] = "walk"}},
+        {17, "Between the two stone columns", -1, 4, 0, {["north"] = 16, ["south"] = 18}, {}, {["bl"] = "", ["fp"] = "Between the two stone columns|north,south", ["source"] = "walk"}},
+        {18, "West of the battle ground entrance", -1, 3, 0, {["north"] = 17, ["east"] = 6, ["west"] = 19}, {}, {["bl"] = "", ["fp"] = "West of the battle ground entrance|east,north,west", ["source"] = "walk"}},
+        {19, "West of the battle ground entrance", -2, 3, 0, {["east"] = 18, ["west"] = 20}, {}, {["bl"] = "", ["fp"] = "West of the battle ground entrance|east,west", ["source"] = "walk"}},
+        {20, "Southwest corner of the battle grounds", -3, 3, 0, {["north"] = 21, ["east"] = 19}, {}, {["bl"] = "", ["fp"] = "Southwest corner of the battle grounds|east,north", ["source"] = "walk"}},
+        {21, "Between the far west wall and the west stone column", -3, 4, 0, {["north"] = 22, ["south"] = 20}, {}, {["bl"] = "", ["fp"] = "Between the far west wall and the west stone column|north,south", ["source"] = "walk"}},
+        {22, "Northwest corner of the battle grounds", -3, 5, 0, {["east"] = 23, ["south"] = 21}, {}, {["bl"] = "", ["fp"] = "Northwest corner of the battle grounds|east,south", ["source"] = "walk"}},
+        {23, "Near the northwest corner of the battle grounds", -2, 5, 0, {["east"] = 16, ["west"] = 22}, {}, {["bl"] = "", ["fp"] = "Near the northwest corner of the battle grounds|east,west", ["source"] = "walk"}},
+        {24, "Temple of Honor", -2, 1, 0, {["east"] = 3, ["west"] = 25}, {}, {["bl"] = "", ["fp"] = "Temple of Honor|east,west", ["source"] = "walk"}},
+        {25, "The Chamber of the Battlelord", -3, 1, 0, {["east"] = 24}, {}, {["bl"] = "", ["fp"] = "The Chamber of the Battlelord|east", ["source"] = "walk"}},
+        {26, "Inner keep", -1, -1, 0, {["north"] = 2, ["west"] = 32, ["south"] = 27}, {}, {["bl"] = "", ["fp"] = "Inner keep|north,south,west", ["source"] = "walk"}},
+        {27, "Outside of the fighter fortress", -1, -2, 0, {["north"] = 26, ["east"] = 28, ["west"] = 31, ["south"] = 30}, {}, {["bl"] = "", ["fp"] = "Outside of the fighter fortress|east,north,south,west", ["source"] = "walk"}},
+        {28, "Newbie shop", 0, -2, 0, {["east"] = 29, ["west"] = 27}, {}, {["bl"] = "", ["fp"] = "Newbie shop|east,west", ["source"] = "walk"}},
+        {29, "Fighter Check Room", 1, -2, 0, {["west"] = 28}, {}, {["bl"] = "", ["fp"] = "Fighter Check Room|west", ["source"] = "walk"}},
+        {30, "Barracks", -1, -3, 0, {["north"] = 27}, {}, {["bl"] = "", ["fp"] = "Barracks|north", ["source"] = "walk"}},
+        {31, "Outside of the fighter fortress", -2, -2, 0, {["east"] = 27, ["west"] = 35}, {}, {["bl"] = "", ["fp"] = "Outside of the fighter fortress|east,west", ["source"] = "walk"}},
+        {32, "Fighter Advancement room", -2, -1, 0, {["east"] = 26}, {}, {["bl"] = "", ["fp"] = "Fighter Advancement room|east", ["source"] = "walk"}},
+        {33, "Fighter shop", -2, 0, 0, {["east"] = 2, ["west"] = 34}, {}, {["bl"] = "", ["fp"] = "Fighter shop|east,west", ["source"] = "walk"}},
+        {34, "Fighter guild kitchen", -3, 0, 0, {["east"] = 33}, {}, {["bl"] = "", ["fp"] = "Fighter guild kitchen|east", ["source"] = "walk"}},
+        {35, "Path of the Sun Dragon", -3, -2, 0, {["east"] = 31}, {"north", "south"}, {["bl"] = "", ["fp"] = "Path of the Sun Dragon|east,north,south", ["outside"] = "1", ["source"] = "walk"}},
+    } },
+    ["jomsviking"] = { area = "Jomsviking", rooms = {
+        {1, "Jomsviking Training Area", 0, 0, 0, {}, {}, {["bl"] = "", ["fp"] = "Jomsviking Training Area|adv", ["named_exits"] = "adv", ["source"] = "walk", ["start"] = "1"}},
+    } },
+    ["mage"] = { area = "Mage", rooms = {
+        {1, "Apprentices' Chambers", 0, 0, 0, {["north"] = 2}, {}, {["bl"] = "", ["fp"] = "Apprentices' Chambers|north", ["source"] = "walk", ["start"] = "1"}},
+        {2, "Mage Check Room", 0, 1, 0, {["south"] = 1}, {}, {["bl"] = "", ["fp"] = "Mage Check Room|south", ["source"] = "walk"}},
+    } },
+    ["merchant"] = { area = "Merchant", rooms = {
+        {1, "Training room.", 0, 0, 0, {["south"] = 2}, {}, {["bl"] = "", ["fp"] = "Training room.|adv-guild,south", ["named_exits"] = "adv-guild", ["source"] = "walk", ["start"] = "1"}},
+        {2, "Short hallway", 0, -1, 0, {["north"] = 1, ["east"] = 3, ["west"] = 34, ["south"] = 29}, {}, {["bl"] = "", ["fp"] = "Short hallway|east,north,south,west", ["source"] = "walk"}},
+        {3, "Merchant's Guild Central Office", 1, -1, 0, {["north"] = 11, ["east"] = 4, ["west"] = 2, ["up"] = 14}, {}, {["bl"] = "", ["fp"] = "Merchant's Guild Central Office|east,north,up,west", ["source"] = "walk"}},
+        {4, "Merchant Check Office", 2, -1, 0, {["north"] = 5, ["west"] = 3, ["south"] = 8}, {}, {["bl"] = "", ["fp"] = "Merchant Check Office|north,south,west", ["source"] = "walk"}},
+        {5, "Joining room of the Equipment Safehands guild.", 2, 0, 0, {["north"] = 6, ["south"] = 4}, {}, {["bl"] = "", ["fp"] = "Joining room of the Equipment Safehands guild.|north,south", ["source"] = "walk"}},
+        {6, "Advancement room of the Equipment Safehands guild", 2, 1, 0, {["north"] = 7, ["south"] = 5}, {}, {["bl"] = "", ["fp"] = "Advancement room of the Equipment Safehands guild|north,south", ["source"] = "walk"}},
+        {7, "Training room of the Equipment Safehands guild", 2, 2, 0, {["south"] = 6}, {}, {["bl"] = "", ["fp"] = "Training room of the Equipment Safehands guild|south", ["source"] = "walk"}},
+        {8, "Joining room of the Equipment Safeguard guild.", 2, -2, 0, {["north"] = 4, ["south"] = 9}, {}, {["bl"] = "", ["fp"] = "Joining room of the Equipment Safeguard guild.|north,south", ["source"] = "walk"}},
+        {9, "Advancement room of the Equipment Safeguard guild", 2, -3, 0, {["north"] = 8, ["south"] = 10}, {}, {["bl"] = "", ["fp"] = "Advancement room of the Equipment Safeguard guild|north,south", ["source"] = "walk"}},
+        {10, "Training room of the Equipment Safeguard guild", 2, -4, 0, {["north"] = 9}, {}, {["bl"] = "", ["fp"] = "Training room of the Equipment Safeguard guild|north", ["source"] = "walk"}},
+        {11, "Salesman Joining", 1, 0, 0, {["east"] = 12, ["south"] = 3}, {}, {["bl"] = "", ["fp"] = "Salesman Joining|east,south", ["source"] = "walk"}},
+        {12, "Salesman Advancement", 3, 0, 0, {["east"] = 13, ["west"] = 11}, {}, {["bl"] = "", ["fp"] = "Salesman Advancement|east,west", ["source"] = "walk"}},
+        {13, "Salesman Training", 4, 0, 0, {["west"] = 12}, {}, {["bl"] = "", ["fp"] = "Salesman Training|west", ["source"] = "walk"}},
+        {14, "Entrance to the Merchant Council.", 1, -1, 1, {["north"] = 16, ["east"] = 15, ["down"] = 3}, {}, {["bl"] = "", ["fp"] = "Entrance to the Merchant Council.|down,east,north", ["source"] = "walk"}},
+        {15, "Join room of the Merchant Council.", 2, -1, 1, {["west"] = 14}, {}, {["bl"] = "", ["fp"] = "Join room of the Merchant Council.|west", ["source"] = "walk"}},
+        {16, "Rotundum meeting place", 1, 0, 1, {["north"] = 25, ["northeast"] = 26, ["northwest"] = 27, ["east"] = 17, ["west"] = 28, ["south"] = 14}, {}, {["bl"] = "", ["fp"] = "Rotundum meeting place|east,north,northeast,northwest,south,west", ["source"] = "walk"}},
+        {17, "Training room of the Merchant Council", 2, 0, 1, {["east"] = 18, ["west"] = 16}, {}, {["bl"] = "", ["fp"] = "Training room of the Merchant Council|east,west", ["source"] = "walk"}},
+        {18, "The library of the Merchant Council", 3, 0, 1, {["north"] = 19, ["west"] = 17, ["south"] = 22}, {}, {["bl"] = "", ["fp"] = "The library of the Merchant Council|north,south,west", ["source"] = "walk"}},
+        {19, "Joining room of the Gem cutters guild.", 3, 1, 1, {["north"] = 20, ["south"] = 18}, {}, {["bl"] = "", ["fp"] = "Joining room of the Gem cutters guild.|north,south", ["source"] = "walk"}},
+        {20, "Advancement room of the Gem Cutters guild", 3, 2, 1, {["north"] = 21, ["south"] = 19}, {}, {["bl"] = "", ["fp"] = "Advancement room of the Gem Cutters guild|north,south", ["source"] = "walk"}},
+        {21, "Training room of the Gem Cutters guild", 3, 3, 1, {["south"] = 20}, {}, {["bl"] = "", ["fp"] = "Training room of the Gem Cutters guild|south", ["source"] = "walk"}},
+        {22, "Joining room of the Gem polishers guild.", 3, -1, 1, {["north"] = 18, ["south"] = 23}, {}, {["bl"] = "", ["fp"] = "Joining room of the Gem polishers guild.|north,south", ["source"] = "walk"}},
+        {23, "Advancement room of the Gem Polishers guild", 3, -2, 1, {["north"] = 22, ["south"] = 24}, {}, {["bl"] = "", ["fp"] = "Advancement room of the Gem Polishers guild|north,south", ["source"] = "walk"}},
+        {24, "Training room of the Gem Polishers guild", 3, -3, 1, {["north"] = 23}, {}, {["bl"] = "", ["fp"] = "Training room of the Gem Polishers guild|north", ["source"] = "walk"}},
+        {25, "Voting chambers of the council of merchants.", 1, 1, 1, {["south"] = 16}, {}, {["bl"] = "", ["fp"] = "Voting chambers of the council of merchants.|south", ["source"] = "walk"}},
+        {26, "Council shop", 2, 1, 1, {["southwest"] = 16}, {}, {["bl"] = "", ["fp"] = "Council shop|southwest", ["source"] = "walk"}},
+        {27, "Chambers of Trade.", 0, 1, 1, {["southeast"] = 16}, {}, {["bl"] = "", ["fp"] = "Chambers of Trade.|southeast", ["source"] = "walk"}},
+        {28, "Advancement room of the Merchant Council", 0, 0, 1, {["east"] = 16}, {}, {["bl"] = "", ["fp"] = "Advancement room of the Merchant Council|east", ["source"] = "walk"}},
+        {29, "A large fancy room", 0, -2, 0, {["north"] = 2, ["east"] = 30, ["west"] = 33}, {"south"}, {["bl"] = "", ["fp"] = "A large fancy room|east,north,south,west", ["source"] = "walk"}},
+        {30, "Advancement room", 1, -2, 0, {["west"] = 29, ["south"] = 31}, {}, {["bl"] = "", ["fp"] = "Advancement room|south,west", ["source"] = "walk"}},
+        {31, "The Chamber of the Master Merchants", 1, -3, 0, {["north"] = 30, ["up"] = 32}, {}, {["bl"] = "", ["fp"] = "The Chamber of the Master Merchants|north,up", ["source"] = "walk"}},
+        {32, "Salmoneous' chamber", 1, -3, 1, {["down"] = 31}, {}, {["bl"] = "", ["fp"] = "Salmoneous' chamber|down", ["source"] = "walk"}},
+        {33, "Merchant board room.", -1, -2, 0, {["east"] = 29}, {}, {["bl"] = "", ["fp"] = "Merchant board room.|east", ["source"] = "walk"}},
+        {34, "Merchant joining room.", -1, -1, 0, {["east"] = 2}, {"north"}, {["bl"] = "", ["fp"] = "Merchant joining room.|east,north", ["source"] = "walk"}},
+    } },
+    ["monk"] = { area = "Monk", rooms = {
+        {1, "Monk Training Area", 0, 0, 0, {["north"] = 5, ["northeast"] = 4, ["northwest"] = 8, ["east"] = 2, ["west"] = 7, ["south"] = 11, ["southeast"] = 12, ["southwest"] = 10}, {}, {["bl"] = "", ["fp"] = "Monk Training Area|adv,east,north,northeast,northwest,south,southeast,southwest,west", ["named_exits"] = "adv", ["source"] = "walk", ["start"] = "1"}},
+        {2, "Monks' Practice Area", 1, 0, 0, {["north"] = 4, ["northwest"] = 5, ["east"] = 3, ["west"] = 1, ["south"] = 12, ["southwest"] = 11}, {}, {["bl"] = "", ["fp"] = "Monks' Practice Area|east,north,northwest,south,southwest,west", ["source"] = "walk"}},
+        {3, "Monastery entrance", 2, 0, 0, {["east"] = 23, ["west"] = 2}, {}, {["bl"] = "", ["fp"] = "Monastery entrance|east,west", ["source"] = "walk"}},
+        {4, "Monks' Practice Area", 1, 1, 0, {["west"] = 5, ["south"] = 2, ["southwest"] = 1}, {}, {["bl"] = "", ["fp"] = "Monks' Practice Area|south,southwest,west", ["source"] = "walk"}},
+        {5, "Monks' Practice Area", 0, 1, 0, {["north"] = 6, ["east"] = 4, ["west"] = 8, ["south"] = 1, ["southeast"] = 2, ["southwest"] = 7}, {}, {["bl"] = "", ["fp"] = "Monks' Practice Area|east,north,south,southeast,southwest,west", ["source"] = "walk"}},
+        {6, "Monk initiation chamber", 0, 2, 0, {["south"] = 5}, {"down"}, {["bl"] = "", ["fp"] = "Monk initiation chamber|down,south", ["source"] = "walk"}},
+        {7, "Monks' Practice Area", -1, 0, 0, {["north"] = 8, ["northeast"] = 5, ["east"] = 1, ["west"] = 22, ["south"] = 10, ["southeast"] = 11}, {}, {["bl"] = "", ["fp"] = "Monks' Practice Area|east,north,northeast,south,southeast,west", ["source"] = "walk"}},
+        {8, "Monks' Practice Area", -1, 1, 0, {["east"] = 5, ["west"] = 9, ["south"] = 7, ["southeast"] = 1}, {}, {["bl"] = "", ["fp"] = "Monks' Practice Area|east,south,southeast,west", ["source"] = "walk"}},
+        {9, "Monk Check Room", -2, 1, 0, {["east"] = 8}, {}, {["bl"] = "", ["fp"] = "Monk Check Room|east", ["source"] = "walk"}},
+        {10, "Monks' Practice Area", -1, -1, 0, {["north"] = 7, ["northeast"] = 1, ["east"] = 11}, {}, {["bl"] = "", ["fp"] = "Monks' Practice Area|east,north,northeast", ["source"] = "walk"}},
+        {11, "Monks' Practice Area", 0, -1, 0, {["north"] = 1, ["northeast"] = 2, ["northwest"] = 7, ["east"] = 12, ["west"] = 10, ["south"] = 13}, {}, {["bl"] = "", ["fp"] = "Monks' Practice Area|east,north,northeast,northwest,south,west", ["source"] = "walk"}},
+        {12, "Monks' Practice Area", 1, -1, 0, {["north"] = 2, ["northwest"] = 1, ["west"] = 11}, {}, {["bl"] = "", ["fp"] = "Monks' Practice Area|north,northwest,west", ["source"] = "walk"}},
+        {13, "Stone corridor", 0, -2, 0, {["north"] = 11, ["south"] = 14}, {}, {["bl"] = "", ["fp"] = "Stone corridor|north,south", ["source"] = "walk"}},
+        {14, "Stone corridor", 0, -3, 0, {["north"] = 13, ["east"] = 15, ["west"] = 21, ["south"] = 16}, {}, {["bl"] = "", ["fp"] = "Stone corridor|east,north,south,west", ["source"] = "walk"}},
+        {15, "Monastic cell", 1, -3, 0, {["west"] = 14}, {}, {["bl"] = "", ["fp"] = "Monastic cell|west", ["source"] = "walk"}},
+        {16, "Stone corridor", 0, -4, 0, {["north"] = 14, ["east"] = 17, ["west"] = 20, ["south"] = 18}, {}, {["bl"] = "", ["fp"] = "Stone corridor|east,north,south,west", ["source"] = "walk"}},
+        {17, "Monastic cell", 1, -4, 0, {["west"] = 16}, {}, {["bl"] = "", ["fp"] = "Monastic cell|west", ["source"] = "walk"}},
+        {18, "Ablution pool", 0, -5, 0, {["north"] = 16, ["south"] = 19}, {}, {["bl"] = "", ["fp"] = "Ablution pool|north,south", ["source"] = "walk"}},
+        {19, "Grandmaster's chamber", 0, -6, 0, {["north"] = 18}, {}, {["bl"] = "", ["fp"] = "Grandmaster's chamber|north", ["source"] = "walk"}},
+        {20, "Monastic cell", -1, -4, 0, {["east"] = 16}, {}, {["bl"] = "", ["fp"] = "Monastic cell|east", ["source"] = "walk"}},
+        {21, "Monastic cell", -1, -3, 0, {["east"] = 14}, {}, {["bl"] = "", ["fp"] = "Monastic cell|east", ["source"] = "walk"}},
+        {22, "Monk advancement", -2, 0, 0, {["east"] = 7}, {}, {["bl"] = "", ["fp"] = "Monk advancement|east", ["source"] = "walk"}},
+        {23, "North Vigor Street", 3, 0, 0, {["west"] = 3}, {"north", "south"}, {["bl"] = "", ["fp"] = "North Vigor Street|north,south,west", ["outside"] = "1", ["source"] = "walk"}},
+    } },
+    ["necromancer"] = { area = "Necromancer", rooms = {
+        {1, "Chamber of Necromantic Studies", 0, 0, 0, {["north"] = 2}, {}, {["bl"] = "", ["fp"] = "Chamber of Necromantic Studies|advguild,north", ["named_exits"] = "advguild", ["source"] = "walk", ["start"] = "1"}},
+        {2, "A Medium Hallway", 0, 1, 0, {["north"] = 6, ["east"] = 3, ["west"] = 7, ["south"] = 1}, {}, {["bl"] = "", ["fp"] = "A Medium Hallway|east,north,south,stairs,west", ["named_exits"] = "stairs", ["source"] = "walk"}},
+        {3, "A Medium Hallway", 1, 1, 0, {["north"] = 4, ["west"] = 2, ["south"] = 5}, {}, {["bl"] = "", ["fp"] = "A Medium Hallway|north,south,west", ["source"] = "walk"}},
+        {4, "Necromancer Testing and Advancement", 1, 2, 0, {["south"] = 3}, {}, {["bl"] = "", ["fp"] = "Necromancer Testing and Advancement|south", ["source"] = "walk"}},
+        {5, "Necromancer Check Room", 1, 0, 0, {["north"] = 3}, {}, {["bl"] = "", ["fp"] = "Necromancer Check Room|north", ["source"] = "walk"}},
+        {6, "Admissions Office", 0, 2, 0, {["south"] = 2}, {}, {["bl"] = "", ["fp"] = "Admissions Office|south", ["source"] = "walk"}},
+        {7, "The Grand Hall", -1, 1, 0, {["north"] = 8, ["east"] = 2, ["west"] = 10}, {}, {["bl"] = "", ["fp"] = "The Grand Hall|east,leave,north,west", ["named_exits"] = "leave", ["source"] = "walk"}},
+        {8, "Bottom of a Stairway", -1, 2, 0, {["south"] = 7, ["up"] = 9}, {}, {["bl"] = "", ["fp"] = "Bottom of a Stairway|south,up", ["source"] = "walk"}},
+        {9, "Top of a Stairway", -1, 2, 1, {["down"] = 8}, {}, {["bl"] = "", ["fp"] = "Top of a Stairway|down,enter", ["named_exits"] = "enter", ["source"] = "walk"}},
+        {10, "A Short Hallway", -2, 1, 0, {["north"] = 11, ["east"] = 7, ["west"] = 12}, {}, {["bl"] = "", ["fp"] = "A Short Hallway|east,north,stairs,west", ["named_exits"] = "stairs", ["source"] = "walk"}},
+        {11, "A Small Shop", -2, 2, 0, {["south"] = 10}, {}, {["bl"] = "", ["fp"] = "A Small Shop|south", ["source"] = "walk"}},
+        {12, "A Boardroom", -3, 1, 0, {["east"] = 10}, {}, {["bl"] = "", ["fp"] = "A Boardroom|east", ["source"] = "walk"}},
+    } },
+    ["paladin"] = { area = "Paladin", rooms = {
+        {1, "Sikkarian Temple", 0, 0, 0, {["north"] = 4, ["east"] = 2, ["west"] = 8, ["south"] = 6}, {}, {["bl"] = "", ["fp"] = "Sikkarian Temple|adv,east,north,south,west", ["named_exits"] = "adv", ["source"] = "walk", ["start"] = "1"}},
+        {2, "The Holy Library", 1, 0, 0, {["east"] = 3, ["west"] = 1}, {}, {["bl"] = "", ["fp"] = "The Holy Library|east,west", ["source"] = "walk"}},
+        {3, "Ranking Room", 2, 0, 0, {["west"] = 2}, {}, {["bl"] = "", ["fp"] = "Ranking Room|west", ["source"] = "walk"}},
+        {4, "Paladins' Board Room", 0, 1, 0, {["east"] = 5, ["south"] = 1}, {}, {["bl"] = "", ["fp"] = "Paladins' Board Room|east,south", ["source"] = "walk"}},
+        {5, "Paladin Check Room", 1, 1, 0, {["west"] = 4}, {}, {["bl"] = "", ["fp"] = "Paladin Check Room|west", ["source"] = "walk"}},
+        {6, "Advancement Room", 0, -1, 0, {["north"] = 1, ["up"] = 7}, {}, {["bl"] = "", ["fp"] = "Advancement Room|north,up", ["source"] = "walk"}},
+        {7, "Coronation Room", 0, -1, 1, {["down"] = 6}, {}, {["bl"] = "", ["fp"] = "Coronation Room|down", ["source"] = "walk"}},
+        {8, "Hall of Initiation", -1, 0, 0, {["north"] = 9, ["east"] = 1}, {"south"}, {["bl"] = "", ["fp"] = "Hall of Initiation|east,north,south", ["source"] = "walk"}},
+        {9, "Chamber of Honor", -1, 1, 0, {["south"] = 8}, {}, {["bl"] = "", ["fp"] = "Chamber of Honor|south", ["source"] = "walk"}},
+    } },
+    ["psionicist"] = { area = "Psionicist", rooms = {
+        {1, "Psionicist training room", 0, 0, 0, {["down"] = 2}, {}, {["bl"] = "", ["fp"] = "Psionicist training room|down", ["source"] = "walk", ["start"] = "1"}},
+        {2, "Psionicist Guild", 0, 0, -1, {}, {"east", "north", "northeast", "northwest", "south", "southeast", "southwest", "up", "west"}, {["bl"] = "", ["fp"] = "Psionicist Guild|castle,east,enter,north,northeast,northwest,south,southeast,southwest,up,west", ["named_exits"] = "castle,enter", ["outside"] = "1", ["source"] = "walk"}},
+    } },
+    ["ranger"] = { area = "Ranger", rooms = {
+        {1, "Ranger Training Hall", 0, 0, 0, {["west"] = 2}, {}, {["bl"] = "", ["fp"] = "Ranger Training Hall|adv-guild,west", ["named_exits"] = "adv-guild", ["source"] = "walk", ["start"] = "1"}},
+        {2, "Top of Woodhaven", -1, 0, 0, {["north"] = 10, ["east"] = 1, ["west"] = 12, ["south"] = 11, ["down"] = 3}, {}, {["bl"] = "", ["fp"] = "Top of Woodhaven|down,east,north,south,west", ["source"] = "walk"}},
+        {3, "Ranger's Lounge", -1, 0, -1, {["northeast"] = 7, ["northwest"] = 8, ["south"] = 9, ["up"] = 2, ["down"] = 4}, {}, {["bl"] = "", ["fp"] = "Ranger's Lounge|down,northeast,northwest,south,up", ["source"] = "walk"}},
+        {4, "Ranger joining room", -1, 0, -2, {["up"] = 3, ["down"] = 5}, {}, {["bl"] = "", ["fp"] = "Ranger joining room|down,up", ["source"] = "walk"}},
+        {5, "Entrance to Woodhaven", -1, 0, -3, {["up"] = 4, ["down"] = 6}, {}, {["bl"] = "", ["fp"] = "Entrance to Woodhaven|down,up", ["source"] = "walk"}},
+        {6, "Base of a giant oak tree", -1, 0, -4, {["up"] = 6}, {}, {["bl"] = "", ["fp"] = "Base of a giant oak tree|path", ["named_exits"] = "path", ["source"] = "walk"}},
+        {7, "Ranger's Emporium", 0, 1, -1, {["southwest"] = 3}, {}, {["bl"] = "", ["fp"] = "Ranger's Emporium|southwest", ["source"] = "walk"}},
+        {8, "Herbal Library", -2, 1, -1, {["southeast"] = 3}, {}, {["bl"] = "", ["fp"] = "Herbal Library|southeast", ["source"] = "walk"}},
+        {9, "Ranger Check Room", -1, -1, -1, {["north"] = 3}, {}, {["bl"] = "", ["fp"] = "Ranger Check Room|north", ["source"] = "walk"}},
+        {10, "Ranger Command Chamber", -1, 1, 0, {["south"] = 2}, {}, {["bl"] = "", ["fp"] = "Ranger Command Chamber|south", ["source"] = "walk"}},
+        {11, "Master Ranger's quarters", -1, -1, 0, {["north"] = 2}, {}, {["bl"] = "", ["fp"] = "Master Ranger's quarters|north", ["source"] = "walk"}},
+        {12, "Ranger Advancment room", -2, 0, 0, {["east"] = 2}, {}, {["bl"] = "", ["fp"] = "Ranger Advancment room|east", ["source"] = "walk"}},
+    } },
+    ["sentinel"] = { area = "Sentinel", rooms = {
+        {1, "Sentinel Practice Room", 0, 0, 0, {["south"] = 2}, {}, {["bl"] = "", ["fp"] = "Sentinel Practice Room|adv,south", ["named_exits"] = "adv", ["source"] = "walk", ["start"] = "1"}},
+        {2, "Swearing In Room", 0, -1, 0, {["north"] = 1, ["east"] = 3, ["west"] = 10, ["south"] = 6, ["up"] = 8}, {}, {["bl"] = "", ["fp"] = "Swearing In Room|east,north,south,up,west", ["source"] = "walk"}},
+        {3, "Law Room - The Pillar of Law", 1, -1, 0, {["north"] = 4, ["west"] = 2, ["south"] = 5}, {"east"}, {["bl"] = "", ["fp"] = "Law Room - The Pillar of Law|east,north,south,west", ["source"] = "walk"}},
+        {4, "Retromud's Most Wanted", 1, 0, 0, {["south"] = 3}, {}, {["bl"] = "", ["fp"] = "Retromud's Most Wanted|south", ["source"] = "walk"}},
+        {5, "Sentinel Check Room", 1, -2, 0, {["north"] = 3}, {}, {["bl"] = "", ["fp"] = "Sentinel Check Room|north", ["source"] = "walk"}},
+        {6, "Promotion Room", 0, -2, 0, {["north"] = 2, ["south"] = 7}, {}, {["bl"] = "", ["fp"] = "Promotion Room|north,south", ["source"] = "walk"}},
+        {7, "Chamber of the Ancients", 0, -3, 0, {["north"] = 6}, {}, {["bl"] = "", ["fp"] = "Chamber of the Ancients|north", ["source"] = "walk"}},
+        {8, "Sentinel File Room", 0, -1, 1, {["north"] = 9, ["down"] = 2}, {}, {["bl"] = "", ["fp"] = "Sentinel File Room|down,north", ["source"] = "walk"}},
+        {9, "Interrogation Room", 0, 0, 1, {["south"] = 8}, {}, {["bl"] = "", ["fp"] = "Interrogation Room|south", ["source"] = "walk"}},
+        {10, "Gilgal's Sentinel Wares", -1, -1, 0, {["east"] = 2}, {}, {["bl"] = "", ["fp"] = "Gilgal's Sentinel Wares|east", ["source"] = "walk"}},
+    } },
+    ["templar"] = { area = "Templar", rooms = {
+        {1, "Templar Training Hall", 0, 0, 0, {["east"] = 2}, {}, {["bl"] = "", ["fp"] = "Templar Training Hall|adv,east", ["named_exits"] = "adv", ["source"] = "walk", ["start"] = "1"}},
+        {2, "In the sanctuary", 1, 0, 0, {["northeast"] = 3, ["west"] = 1, ["south"] = 12, ["southeast"] = 11, ["southwest"] = 14}, {}, {["bl"] = "", ["fp"] = "In the sanctuary|northeast,south,southeast,southwest,west", ["source"] = "walk"}},
+        {3, "Templar Initiation Room", 2, 1, 0, {["east"] = 4, ["southeast"] = 8, ["southwest"] = 2}, {}, {["bl"] = "", ["fp"] = "Templar Initiation Room|east,southeast,southwest", ["source"] = "walk"}},
+        {4, "Templar Antechamber", 3, 1, 0, {["north"] = 6, ["east"] = 5, ["west"] = 3, ["southeast"] = 7}, {}, {["bl"] = "", ["fp"] = "Templar Antechamber|east,north,southeast,west", ["source"] = "walk"}},
+        {5, "Holy Library", 4, 1, 0, {["west"] = 4}, {}, {["bl"] = "", ["fp"] = "Holy Library|west", ["source"] = "walk"}},
+        {6, "Temple of the Saints", 3, 2, 0, {["south"] = 4}, {}, {["bl"] = "", ["fp"] = "Temple of the Saints|south", ["source"] = "walk"}},
+        {7, "Templar Advancement Room", 4, 0, 0, {["northwest"] = 4, ["west"] = 8}, {}, {["bl"] = "", ["fp"] = "Templar Advancement Room|northwest,west", ["source"] = "walk"}},
+        {8, "In the sanctuary", 3, 0, 0, {["northwest"] = 3, ["east"] = 7, ["south"] = 9, ["southwest"] = 11}, {}, {["bl"] = "", ["fp"] = "In the sanctuary|east,northwest,south,southwest", ["source"] = "walk"}},
+        {9, "In the sanctuary", 3, -2, 0, {["north"] = 8, ["northwest"] = 11, ["east"] = 10, ["southwest"] = 13}, {}, {["bl"] = "", ["fp"] = "In the sanctuary|east,north,northwest,southwest", ["source"] = "walk"}},
+        {10, "Holy Library", 4, -2, 0, {["west"] = 9}, {}, {["bl"] = "", ["fp"] = "Holy Library|west", ["source"] = "walk"}},
+        {11, "In a large pool", 2, -1, 0, {["northeast"] = 8, ["northwest"] = 2, ["southeast"] = 9, ["southwest"] = 12}, {}, {["bl"] = "", ["fp"] = "In a large pool|northeast,northwest,southeast,southwest", ["source"] = "walk"}},
+        {12, "In the sanctuary", 1, -1, 0, {["north"] = 2, ["northeast"] = 11, ["southeast"] = 13}, {"west"}, {["bl"] = "", ["fp"] = "In the sanctuary|north,northeast,southeast,west", ["source"] = "walk"}},
+        {13, "Entrance to the Order of the Knights Templar", 2, -2, 0, {["northeast"] = 9, ["northwest"] = 12}, {"south"}, {["bl"] = "", ["fp"] = "Entrance to the Order of the Knights Templar|northeast,northwest,south", ["source"] = "walk"}},
+        {14, "Templar Check Room", 0, -1, 0, {["northeast"] = 2}, {}, {["bl"] = "", ["fp"] = "Templar Check Room|northeast", ["source"] = "walk"}},
+    } },
 }

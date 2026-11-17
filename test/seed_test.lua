@@ -1,6 +1,7 @@
 -- usage: lua seed_test.lua <body.lua>
--- First-login seeding (45_seed): a new character's first room block loads
--- the matching guild seed; an existing map is never replaced.
+-- Guild maps (45_seed): every seed is merged into the player's map as its own area;
+-- a new character's first room block puts them on their room; an existing map is
+-- only added to, never replaced.
 local dir = arg[0]:match("^(.*)/[^/]*$") or "."
 local S = dofile(dir .. "/mudlet_stub.lua")
 local PROMPT = "Hp: 1/1  Sp: 1/1  Ep: 1/1"
@@ -20,142 +21,189 @@ local function blockEx(name, exitsLine)
     rmap.onLine(PROMPT)
 end
 
-local function boot(rooms)
+-- prefill: rooms (id -> name) and map user data the player already has
+local function boot(prefill, userdata)
     S.reset()
     S.install()
-    S.load(arg[1])
-    S.fire("sysLoadEvent")
-    for id, name in pairs(rooms or {}) do
+    S.load(arg[1], true)
+    for id, name in pairs(prefill or {}) do
         S.map.rooms[id] = { name = name, x = 0, y = 0, z = 0, exits = {},
             stubs = {}, special = {}, ud = {} }
     end
-    local loaded
-    -- stands in for Mudlet's loadJsonMap: the seed's start room is room 1
-    loadJsonMap = function(path)
-        loaded = path
-        S.map.areas.Biomancer = 1
-        S.map.nextArea = 2          -- the next area (the default one) must differ
-        S.map.rooms[1] = { name = "Biomancer Library", area = 1, x = 0, y = 0,
-            z = 0, exits = {}, stubs = {}, special = {},
-            ud = { fp = "Biomancer Library|south", start = "1" } }
-        return true
+    for k, v in pairs(userdata or {}) do S.map.userdata[k] = v end
+    S.fire("sysLoadEvent")
+end
+
+local function startOf(guild)
+    for fp, name in pairs(rmap.seedIndex) do
+        if name == guild then return rmap.build.find(fp) end
     end
-    return function() return loaded end
 end
 
--- 1. new character in a guild start room: seed loaded, mapping on, synced
-local loaded = boot()
-assert(rmap.seedIndex["Biomancer Library|south"] == "biomancer", "no index")
-block("Biomancer Library", "south")
-assert(loaded() == "/profile/retromud/seeds/biomancer.json", tostring(loaded()))
-assert(rmap.mapping, "mapping not turned on")
-assert(rmap.track.pos == 1, "not placed on the start room: " .. tostring(rmap.track.pos))
-assert(rmap.track.state() == "SYNCED")
-assert(S.roomCount() == 1, "seeded map was added to")
-local zoomed = 0
-for _, c in ipairs(S.calls) do
-    if c.name == "setMapZoom" then zoomed = zoomed + 1; assert(c.args[1] == rmap.settings.seedZoom) end
+local function zoomCalls()
+    local n, last = 0, nil
+    for _, c in ipairs(S.calls) do
+        if c.name == "setMapZoom" then n = n + 1; last = c end
+    end
+    return n, last
 end
-assert(zoomed == 1, "seed load must set the zoom once: " .. zoomed)
 
--- a map that already has rooms keeps the player's zoom
-loaded = boot({ [7] = "Somewhere" })
+boot()                      -- loads the package, so rmap.seedData exists
+local TOTAL = 0
+for _, d in pairs(rmap.seedData or {}) do TOTAL = TOTAL + #d.rooms end
+local GUILDS = 0
+for _ in pairs(rmap.seedData) do GUILDS = GUILDS + 1 end
+assert(GUILDS == 19 and TOTAL > 300, "seed data missing: " .. GUILDS .. " guilds, " .. TOTAL .. " rooms")
+
+-- 1. a new character: the package start merges every guild map; the first block
+-- (their guild's start room) puts them there, turns mapping on and zooms in
+boot()
+assert(S.roomCount() == TOTAL, "not every guild map was merged: " .. S.roomCount())
+local areas = 0
+for name in pairs(S.map.areas) do if name ~= "Default Area" then areas = areas + 1 end end
+assert(areas == GUILDS, "one area per guild expected: " .. areas)
 block("Biomancer Library", "south")
-for _, c in ipairs(S.calls) do assert(c.name ~= "setMapZoom", "existing map was zoomed") end
+local bio = startOf("biomancer")
+assert(bio and rmap.track.pos == bio, "not placed on the start room: " .. tostring(rmap.track.pos))
+assert(rmap.mapping and rmap.track.state() == "SYNCED")
+assert(S.roomCount() == TOTAL, "the first block added rooms")
+local n, z = zoomCalls()
+assert(n == 1 and z.args[1] == rmap.settings.seedZoom and z.args[2] == S.map.areas.Biomancer,
+    "zoom not set once for the guild's area")
+assert(S.map.rooms[bio].area == S.map.areas.Biomancer)
 
--- 2. only once per session: a later block must not reload
-S.map.rooms = {}
+-- 1b. the guild service symbols: Biomancer is marked, a guild not yet checked is not
+local marked, other = 0, 0
+for _, r in pairs(S.map.rooms) do
+    if r.char then
+        if r.area == S.map.areas.Biomancer then marked = marked + 1 else other = other + 1 end
+    end
+end
+assert(S.map.rooms[bio].char == "S" and marked > 10, "Biomancer was not marked: " .. marked)
+assert(other == 0, "an unchecked guild was marked")
+
+-- 1c. merging again (a restart) adds nothing
+S.fire("sysLoadEvent")
+assert(S.roomCount() == TOTAL, "merged twice: " .. S.roomCount())
+
+-- 2. once per session: a later block is not a first login
 block("Biomancer Library", "south")
-assert(S.roomCount() == 0, "seeded twice")
+assert(select(1, zoomCalls()) == 1, "welcomed twice")
 
--- 3. empty map, room in no seed: start a fresh map here, nothing loaded
-loaded = boot()
+-- 2b. any guild's start room works, not just the first one (the Merchant's has an `adv-guild` exit)
+boot()
+blockEx("Training room.", "Obvious exits are: adv-guild, and south.")
+assert(rmap.track.pos == startOf("merchant"), "Merchant start room not found")
+assert(S.map.rooms[rmap.track.pos].area == S.map.areas.Merchant)
+
+-- 3. a first room that is in no seed: the maps are all there, and a room is
+-- started here for the player
+boot()
 block("A muddy lane", "east")
-assert(not loaded(), "loaded a seed for an unknown room")
-assert(rmap.mapping and S.roomCount() == 1 and rmap.track.pos, "no fresh map")
+assert(rmap.mapping and rmap.track.pos, "no fresh room")
+assert(S.roomCount() == TOTAL + 1 and S.map.rooms[rmap.track.pos].name == "A muddy lane")
 
--- 4. existing map (a returning player): never replaced, and mapping resumes
-loaded = boot({ [7] = "Somewhere I mapped" })
+-- 4. a returning player: nothing of theirs is replaced, the guild areas are
+-- added beside it, and mapping resumes without a zoom change
+boot({ [7] = "Somewhere I mapped" })
+assert(S.map.rooms[7].name == "Somewhere I mapped" and S.roomCount() == TOTAL + 1,
+    "an existing room was replaced or lost")
 block("Biomancer Library", "south")
-assert(not loaded(), "replaced an existing map")
-assert(S.roomCount() == 1, "touched an existing map")
 assert(rmap.mapping, "mapping did not resume for a returning player")
+assert(select(1, zoomCalls()) == 0, "a returning player was zoomed")
 
 -- 4b. ...unless they stopped it: that choice is remembered across sessions
-loaded = boot({ [7] = "Somewhere I mapped" })
-S.map.userdata["rmap.mapping"] = "off"
+boot({ [7] = "Somewhere I mapped" }, { ["rmap.mapping"] = "off" })
 block("Biomancer Library", "south")
-assert(not loaded() and S.roomCount() == 1 and not rmap.mapping,
-    "mapping resumed after the player stopped it")
+assert(not rmap.mapping, "mapping resumed after the player stopped it")
 
 -- 4c. rmap stop / rmap start write the choice; it is read back next session
-loaded = boot({ [7] = "Somewhere I mapped" })
+boot({ [7] = "Somewhere I mapped" })
 assert(S.alias("rmap stop") and S.map.userdata["rmap.mapping"] == "off", "stop not remembered")
 assert(S.alias("rmap start") and S.map.userdata["rmap.mapping"] == "on", "start not remembered")
 S.alias("rmap stop")
 local choice = S.map.userdata["rmap.mapping"]     -- the next session finds it in the map
-boot({ [7] = "Somewhere I mapped" })
-S.map.userdata["rmap.mapping"] = choice
+boot({ [7] = "Somewhere I mapped" }, { ["rmap.mapping"] = choice })
 block("Biomancer Library", "south")
 assert(not rmap.mapping, "a remembered stop was ignored by the next session")
 
+-- 4d. a map that already has an area of a guild's name (an older seeded map, or
+-- one drawn by hand) is not given a second one
+S.reset()
+S.install()
+S.load(arg[1], true)
+S.map.areas.Biomancer = 1
+S.map.nextArea = 2
+S.fire("sysLoadEvent")
+local count = 0
+for _, r in pairs(S.map.rooms) do if r.area == 1 then count = count + 1 end end
+assert(count == 0, "the player's own Biomancer area was merged into")
+assert(S.roomCount() == TOTAL - #rmap.seedData.biomancer.rooms, "wrong number of rooms merged")
+
 -- 5. character creation prints room blocks first: ignored, and they must not
--- use up the one try; the guild room that follows still seeds
-loaded = boot()
+-- use up the one try; the guild room that follows still welcomes
+boot()
 blockEx("Character Creation", "Obvious exits are: enter, prev, and shrines.")
 blockEx("Race Selection Room", "Obvious exits are: next, and prev.")
 blockEx("Guild Selection Room", "The only obvious exit is next.")
-assert(not loaded() and S.roomCount() == 0, "creation room was mapped or seeded")
+assert(S.roomCount() == TOTAL, "creation room was mapped")
 assert(not rmap.mapping and not rmap.seed.checked, "creation rooms used up the try")
 block("Biomancer Library", "south")
-assert(loaded() == "/profile/retromud/seeds/biomancer.json", "no seed after creation")
-assert(rmap.mapping and rmap.track.pos == 1)
+assert(rmap.mapping and rmap.track.pos == startOf("biomancer"))
 
--- 6. an unknown first room after creation still starts a fresh map
-loaded = boot()
+-- 6. an unknown first room after creation still starts a room
+boot()
 blockEx("Guild Selection Room", "The only obvious exit is next.")
 block("A muddy lane", "east")
-assert(not loaded() and S.roomCount() == 1 and rmap.mapping, "no fresh map after creation")
+assert(S.roomCount() == TOTAL + 1 and rmap.mapping, "no room after creation")
 
 -- 7. a room entered from a seeded room joins its area, not the setting's
-loaded = boot()
+boot()
 block("Biomancer Library", "south")
 local guildArea = S.map.areas.Biomancer
-assert(guildArea and S.map.rooms[1].area == guildArea)
 send("south")
-blockEx("Biomancer Entrance", "Obvious exits are: north, and east.")
+blockEx("Biomancer Entrance", "Obvious exits are: north, east, and up.")
 local entrance = rmap.track.pos
-assert(entrance and entrance ~= 1, "walk out of the seed did not create a room")
-assert(S.map.rooms[entrance].area == guildArea,
-    "new room went to area " .. tostring(S.map.rooms[entrance].area))
+assert(entrance and entrance ~= startOf("biomancer") and S.map.rooms[entrance].name == "Biomancer Entrance",
+    "walking along a seeded link did not follow it")
+assert(S.roomCount() == TOTAL, "a known room was created again")
+-- the entrance has an unexplored exit east
+send("east")
+blockEx("Bazz Street", "Obvious exits are: east, and west.")
+local street = rmap.track.pos
+assert(street and S.map.rooms[street].area == guildArea,
+    "new room went to area " .. tostring(street and S.map.rooms[street].area))
 assert(not S.map.areas.RetroMUD, "the default area was created anyway")
 
 -- 8. rmap area <name> pins the area: new rooms go there from then on
 assert(S.alias("rmap area Elsewhere"))
 send("east")
-blockEx("Bazz Street", "Obvious exits are: east, and west.")
-local street = rmap.track.pos
-assert(street and S.map.rooms[street].area == S.map.areas.Elsewhere,
-    "pinned area ignored: " .. tostring(S.map.rooms[street] and S.map.rooms[street].area))
+blockEx("Another Street", "Obvious exits are: east, and west.")
+local more = rmap.track.pos
+assert(more and S.map.rooms[more].area == S.map.areas.Elsewhere,
+    "pinned area ignored: " .. tostring(S.map.rooms[more] and S.map.rooms[more].area))
 
 -- 9. a new room must not land on a room already in the guild's area: free
 -- cells are looked up in the area the room joins, not the default area
-loaded = boot()
+boot()
 block("Biomancer Library", "south")
-local ga = S.map.areas.Biomancer
-S.map.rooms[50] = { name = "Stray", area = ga, x = 0, y = -1, z = 0, exits = {},
-    stubs = {}, special = {}, ud = { fp = "Stray|none" } }
+ga = S.map.areas.Biomancer
 send("south")
-blockEx("Biomancer Entrance", "Obvious exits are: north, and east.")
+blockEx("Biomancer Entrance", "Obvious exits are: north, east, and up.")
+local ex, ey, ez = S.map.rooms[rmap.track.pos].x, S.map.rooms[rmap.track.pos].y, S.map.rooms[rmap.track.pos].z
+S.map.rooms[900] = { name = "Stray", area = ga, x = ex + 1, y = ey, z = ez, exits = {},
+    stubs = {}, special = {}, ud = { fp = "Stray|none" } }
+send("east")
+blockEx("Bazz Street", "Obvious exits are: east, and west.")
 local placed = S.map.rooms[rmap.track.pos]
-assert(placed and not (placed.x == 0 and placed.y == -1 and placed.z == 0),
+assert(placed and not (placed.x == ex + 1 and placed.y == ey and placed.z == ez),
     "new room was put on top of an existing room in its area")
 
 -- 10. the real first login: `enter` typed in creation, then the guild room,
 -- the guide's chatter and the disclaimers room, all before one prompt. The
--- seed loads, the player stays on the guild's start room, and the disclaimers
--- room is not mapped or linked as an `enter` exit.
-loaded = boot()
+-- player lands on the guild's start room, and the disclaimers room is not
+-- mapped or linked as an `enter` exit.
+boot()
 send("enter")
 for _, l in ipairs({
     "Biomancer Library", "  A place.", "The only obvious exit is south.",
@@ -168,54 +216,38 @@ for _, l in ipairs({
     " It is fairly well lit here.", "Obvious exits are: enter, and skip.", PROMPT }) do
     rmap.onLine(l)
 end
-assert(loaded() == "/profile/retromud/seeds/biomancer.json", "seed not loaded")
-assert(S.roomCount() == 1, "disclaimers room was mapped: " .. S.roomCount() .. " rooms")
-assert(rmap.track.pos == 1, "player moved off the start room: " .. tostring(rmap.track.pos))
-assert(next(getSpecialExitsSwap(1)) == nil, "a bogus special exit was recorded")
+local start = startOf("biomancer")
+assert(S.roomCount() == TOTAL, "disclaimers room was mapped: " .. S.roomCount() .. " rooms")
+assert(rmap.track.pos == start, "player moved off the start room: " .. tostring(rmap.track.pos))
+assert(next(getSpecialExitsSwap(start)) == nil, "a bogus special exit was recorded")
 
 -- 11. a wrong turn in an ignored room loses the position; the redisplayed
 -- guild room after registration puts it back
-loaded = boot()
+boot()
 block("Biomancer Library", "south")
-assert(rmap.track.pos == 1)
+assert(rmap.track.pos == start)
 rmap.track.pos = nil                              -- e.g. a rejected move expired
 block("Biomancer Library", "south")               -- the game prints the guild room again
-assert(rmap.track.pos == 1 and rmap.track.state() == "SYNCED", "lost position not healed")
+assert(rmap.track.pos == start and rmap.track.state() == "SYNCED", "lost position not healed")
 
 -- 12. commands typed before the first room (creation, description, enter) must
--- not claim a later block: a quick first move creates no bogus special exit
-loaded = boot()
+-- not claim a later block: a quick first move follows the seeded link
+boot()
 send("desc set"); send("."); send("enter")
 block("Biomancer Library", "south")
-assert(loaded() and rmap.track.pos == 1)
+assert(rmap.track.pos == start)
 assert(#rmap.track.q == 0, "stale expectations survived the first room: " .. #rmap.track.q)
 send("south")
-blockEx("Biomancer Entrance", "Obvious exits are: north, and east.")
-assert(next(S.map.rooms[1].special) == nil, "a stale expectation created a special exit")
-assert(rmap.track.pos and rmap.track.pos ~= 1, "the first move was not followed")
+blockEx("Biomancer Entrance", "Obvious exits are: north, east, and up.")
+assert(next(S.map.rooms[start].special) == nil, "a stale expectation created a special exit")
+assert(rmap.track.pos and rmap.track.pos ~= start, "the first move was not followed")
 
--- 13. a seeded guild gets its service symbols; a seed not on the list gets none
-loaded = boot()
-local titles = { [2] = "Initiation Room", [3] = "Medicus Medice Training", [4] = "Hallway",
-    [5] = "Mantikor's Medical Supplies", [6] = "Biomancer Entrance" }
-local realLoad = loadJsonMap
-loadJsonMap = function(path)
-    realLoad(path)
-    for id, t in pairs(titles) do
-        S.map.rooms[id] = { name = t, area = 1, x = id, y = 0, z = 0, exits = {},
-            stubs = {}, special = {}, ud = {} }
-    end
-    return true
+-- 13. a named exit in a seed (Biomancer "college") becomes a special exit
+boot()
+local found = false
+for id, r in pairs(S.map.rooms) do
+    if r.name == "Initiation Room" then found = next(r.special) == "college" end
 end
-block("Biomancer Library", "south")
-local R = S.map.rooms
-assert(R[1].char == "S", "start room is not S: " .. tostring(R[1].char))
-assert(R[2].char == "J" and R[3].char == "T" and R[5].char == "$" and R[6].char == "E")
-assert(R[4].char == nil, "a plain hallway got a symbol")
-assert(R[2].charColor and R[1].charColor, "no symbol colour")
-assert(rmap.icons.symbolFor("The Lobby of the Biomantic College") == nil)
-rmap.icons.seeds = {}
-S.map.rooms[2].char = nil
-assert(rmap.icons.apply("biomancer") == 0 and S.map.rooms[2].char == nil, "unlisted seed was marked")
+assert(found, "the `college` exit was not merged as a special exit")
 
 print("seed_test ok")
