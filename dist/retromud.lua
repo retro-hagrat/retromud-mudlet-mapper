@@ -12,7 +12,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud"
-rmap.version = "0.0.23"
+rmap.version = "0.0.24"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
@@ -130,6 +130,9 @@ rmap.settings = {
     -- the sent command; extend during calibration.
     verifyVerbs = { look = true, l = true, glance = true },
     previewVerbs = { peer = true, scry = true },
+    -- Teleports that work from any room: they re-sync by fingerprint, never
+    -- become a special exit (a "wizhome" link on every room walked from).
+    teleportVerbs = { ["goto"] = true, wizhome = true, home = true },
 
     -- Lines that cancel the head expectation (a move that did not move).
     moveFail = { "^You can't go that way!" },
@@ -386,6 +389,7 @@ local function classify(cmd)
     local word = cmd:match("^(%S+)")
     if rmap.settings.verifyVerbs[word] then return "VERIFY" end
     if rmap.settings.previewVerbs[word] then return "PREVIEW" end
+    if rmap.settings.teleportVerbs[word] then return "TELEPORT" end
     if dirAlias[cmd] then return "ADVANCE", dirAlias[cmd] end
     return "MAYBE_MOVE"
 end
@@ -466,6 +470,10 @@ end
 
 local function resolve(e, b)
     if e.kind == "PREVIEW" then return end
+    if e.kind == "TELEPORT" then
+        T.pos = rmap.build.find(b.fingerprint)       -- known room or lost, never a link
+        return
+    end
     local cur = T.pos
     -- mapping off: follow what is already mapped, never write the graph
     local move = rmap.mapping and rmap.build or { advance = rmap.build.follow,
@@ -806,6 +814,9 @@ local function create(b, x, y, z, peer, from)
     setRoomCoordinates(id, x, y, z)
     setRoomUserData(id, "fp", b.fingerprint)
     setRoomUserData(id, "source", peer and "peer" or "walk")
+    -- the room it was entered from: a freeform way out of it (out, leave)
+    -- leads back there (see B.special)
+    if from then setRoomUserData(id, "via", tostring(from)) end
     return id
 end
 
@@ -839,11 +850,24 @@ end
 
 -- The grid is only a layout: the MUD's exits need not fit on it. The
 -- cell (x, y, z) if free, else the nearest free cell on that level that
--- is not in `reserved` ("x,y,z" keys), ties broken by distance to the
--- source cell (sx, sy) so the room stays close to where it came from. Cells
--- are checked in `area`, the area the new room will join.
+-- is not in `reserved` ("x,y,z" keys). The room slides outward along the
+-- exit's ray first (a NE exit never draws as east); failing that, of the
+-- nearest free cells the one whose bearing from the source cell (sx, sy)
+-- is closest to the exit's, then the closest to the source. Cells are
+-- checked in `area`, the area the new room will join.
 local function freeCell(x, y, z, reserved, sx, sy, area)
     reserved = reserved or {}
+    -- first slide the room outward along the exit's own ray, which keeps
+    -- its compass bearing exact; only then search the grid around it
+    local ux, uy = x - (sx or x), y - (sy or y)
+    if ux ~= 0 or uy ~= 0 then
+        for k = 0, 3 do
+            local cx, cy = x + k * ux, y + k * uy
+            if not roomAt(cx, cy, z, area) and not reserved[cx .. "," .. cy .. "," .. z] then
+                return cx, cy, z
+            end
+        end
+    end
     for r = 0, math.huge do
         local bx, by, bd
         for i = -r, r do
@@ -852,8 +876,14 @@ local function freeCell(x, y, z, reserved, sx, sy, area)
                 if math.max(math.abs(i), math.abs(j)) == r
                     and not roomAt(cx, cy, z, area)
                     and not reserved[cx .. "," .. cy .. "," .. z] then
-                    local d = sx and (cx - sx) * (cx - sx)
-                        + (cy - sy) * (cy - sy) or 0
+                    local d = 0
+                    if sx then
+                        local vx, vy, ux, uy = cx - sx, cy - sy, x - sx, y - sy
+                        local len = math.sqrt(vx * vx + vy * vy) * math.sqrt(ux * ux + uy * uy)
+                        -- bearing off by 1-cos in 1e-6 steps; none for up/down/freeform (u = 0)
+                        local off = len > 0 and math.floor((1 - (vx * ux + vy * uy) / len) * 1e6 + 0.5) or 0
+                        d = off * 1e4 + vx * vx + vy * vy
+                    end
                     if not bd or d < bd then bx, by, bd = cx, cy, d end
                 end
             end
@@ -889,11 +919,17 @@ end
 
 -- Non-Euclidean link (decision step 2): the single nearby room with this
 -- fingerprint whose way back toward us is not already linked elsewhere.
-local function near(from, fp, opp)
+local function near(from, fp, opp, dir)
     local x, y, z = getRoomCoordinates(from)
+    local d = rmap.settings.dirs[dir]
+    local ex, ey, ez = x + d.dx, y + d.dy, z + d.dz     -- the cell the exit points at
     local taken = leadsTo(from)
     local hit
-    for _, id in ipairs(candidates(fp)) do
+    local all = candidates(fp)
+    -- a fingerprint on many rooms (a forest, a marsh) proves nothing: a
+    -- duplicate is easy to merge by hand, a false merge breaks paths
+    if #all > 1 then return nil end
+    for _, id in ipairs(all) do
         local a, b, c = getRoomCoordinates(id)
         local back = getRoomExits(id)[opp]
         -- the room already linked behind us is never "ahead" (a
@@ -901,6 +937,9 @@ local function near(from, fp, opp)
         if id ~= from and getRoomArea(id) == getRoomArea(from)
             and (not back or back == from)
             and not taken[id]
+            -- a look-alike right beside the free expected cell is a
+            -- neighbour in the layout, not a fold back onto itself
+            and not (c == ez and math.max(math.abs(a - ex), math.abs(b - ey)) <= 1)
             and math.max(math.abs(a - x), math.abs(b - y),
                 math.abs(c - z)) <= rmap.settings.maxSearchDistance then
             if hit then return nil end               -- ambiguous
@@ -946,6 +985,12 @@ function B.advance(from, dir, b, peer)
     -- a different room there means the map does not fit the grid, so
     -- ignore it (links, not cells, are the truth).
     if to and not linked and B.fp(to) ~= b.fingerprint then to = nil end
+    -- ...and a look-alike whose way back already leads to another room is
+    -- that room's neighbour, not ours (a forest of identical rooms)
+    if to and not linked then
+        local back = getRoomExits(to)[d.opp]
+        if back and back ~= from then to = nil end
+    end
     -- an inferred way back that led somewhere else was wrong: drop it
     if to and linked and B.fp(to) ~= b.fingerprint and not peer
         and inferred(from, dir) then
@@ -955,7 +1000,7 @@ function B.advance(from, dir, b, peer)
     end
     -- a preview must not fold two look-alike neighbours into one room:
     -- only a real link (or the cell guess above) may reuse a room
-    to = to or (not peer and near(from, b.fingerprint, d.opp)) or nil
+    to = to or (not peer and near(from, b.fingerprint, d.opp, dir)) or nil
     if to then
         if B.fp(to) ~= b.fingerprint then return nil end
         link(from, to, dir)
@@ -992,6 +1037,15 @@ function B.special(from, cmd, b, peer)
     if not to and not peer then
         to = B.find(b.fingerprint)
         if to and leadsTo(from)[to] then to = nil end
+        -- a freeform way out of a room entered by a freeform exit, onto a
+        -- room that looks like the one we came in from, leads back there
+        if not to then
+            local ok, v = pcall(function() return tonumber(getRoomUserData(from, "via")) end)
+            if ok and v and select(1, pcall(B.fp, v)) and B.fp(v) == b.fingerprint
+                and v ~= from and not leadsTo(from)[v] then
+                to = v
+            end
+        end
     end
     -- a peered neighbour that looks like this room is another room, not a loop
     if to == from then to = nil end
@@ -1033,6 +1087,15 @@ function B.adopt(b)
     local x = 0
     while roomAt(x, 0, 0) do x = x + 1 end
     to = create(b, x, 0, 0)
+    -- a place not linked to anything mapped gets its own area (named after
+    -- its first room), so unrelated places never share one grid and grow
+    -- into each other; a pinned `rmap area` still wins
+    if not rmap.settings.areaPinned then
+        local name, n = b.name, 1
+        while getAreaTable()[name] do n = n + 1; name = b.name .. " (" .. n .. ")" end
+        setRoomArea(to, addAreaName(name))
+        setRoomCoordinates(to, 0, 0, 0)
+    end
     B.created[#B.created + 1] = { id = to }
     stub(to, b)
     return to
