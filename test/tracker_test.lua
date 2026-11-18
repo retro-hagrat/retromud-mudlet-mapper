@@ -274,6 +274,104 @@ assert(not (br.x == ax.x + 1 and br.y == ax.y and br.z == ax.z),
     "B placed on the occupied cell")
 assert(rmap.track.pos == bid and rmap.track.state() == "SYNCED", "still synced")
 
+-- a look-alike on the expected cell that already leads back to another
+-- room is that room's neighbour: walking there makes a new room
+fresh(); start("Glade", { "north", "south" })
+local ga = S.map.rooms[one("Glade")]
+local other = createRoomID(); addRoom(other); setRoomArea(other, ga.area)
+setRoomName(other, "Far"); setRoomCoordinates(other, ga.x + 5, ga.y + 5, ga.z)
+setRoomUserData(other, "fp", "Far|north")
+local twin = createRoomID(); addRoom(twin); setRoomArea(twin, ga.area)
+setRoomName(twin, "Twin"); setRoomCoordinates(twin, ga.x, ga.y + 1, ga.z)
+setRoomUserData(twin, "fp", "Twin|north,south")
+setExit(twin, other, 6)                      -- its south leads elsewhere
+go("n", "Twin", { "north", "south" })
+assert(rmap.track.pos ~= twin, "walked into a look-alike belonging elsewhere")
+
+-- a teleport (wizhome/goto/home) is never a special exit
+fresh(); start("Cell", { "north" })
+local tcell = one("Cell")
+go("wizhome", "Workroom", { "guild" })
+assert(next(getSpecialExitsSwap(tcell)) == nil, "teleport became a special exit")
+
+-- a generic room (fingerprint on several rooms) is never folded onto a
+-- distant look-alike: the new room is made (air/sylvan false merge)
+local GX = { "east", "north", "south", "west" }
+fresh(); start("Glen", GX)
+go("e", "Glen", GX); go("e", "Glen", GX)
+local g3 = rmap.track.pos
+go("w", "Glen", GX); go("w", "Glen", GX)
+local before = S.roomCount()
+go("n", "Glen", GX)                          -- unmapped room, same look
+assert(S.roomCount() == before + 1 and rmap.track.pos ~= g3,
+    "generic look-alike was folded onto a distant room")
+
+-- a look-alike one cell from the free expected cell is a neighbour, not a
+-- fold: the new room is made (water/cairn false merge)
+fresh(); start("Pa", { "east" })
+go("e", "Marsh", { "east", "northeast" })
+go("e", "Q", { "north" })
+go("n", "R", { "north" })
+go("n", "S", { "southwest" })
+local mb = one("Marsh")
+local nb = S.roomCount()
+go("sw", "Marsh", { "east", "northeast" })
+assert(S.roomCount() == nb + 1 and rmap.track.pos ~= mb,
+    "adjacent look-alike was folded onto an existing room")
+
+-- a freeform way out of a room entered by a freeform exit leads back to
+-- where it came from, even when the room is one of several look-alikes
+-- (air/knife_throwing: hallway -> guild room -> out)
+local HX = { "door", "east", "west" }
+fresh(); start("Hall", HX)
+go("e", "Hall", HX)
+local hall2 = rmap.track.pos
+go("door", "Closet", { "out" })
+local nh = S.roomCount()
+go("out", "Hall", HX)
+assert(rmap.track.pos == hall2 and S.roomCount() == nh,
+    "freeform way out made a duplicate instead of returning")
+
+-- the same when the room was entered by a compass exit
+local HN = { "door", "east", "north", "west" }
+fresh(); start("Hall", HN)
+go("e", "Hall", HN)
+local hall3 = rmap.track.pos
+go("n", "Cell", { "out" })
+local nc = S.roomCount()
+go("out", "Hall", HN)
+assert(rmap.track.pos == hall3 and S.roomCount() == nc,
+    "freeform way out of a compass-entered room made a duplicate")
+
+-- two unrelated places synced with `rmap where` get separate areas
+fresh(); start("Place One", { "north" })
+local p1 = one("Place One")
+start("Place Two", { "south" })
+local p2 = one("Place Two")
+assert(getRoomArea(p1) ~= getRoomArea(p2), "orphans share one area")
+
+-- a nudged room keeps its exit's bearing: a NE exit whose cell is taken
+-- must not draw as east of its source (player report, Megan cathedral)
+fresh(); start("Loru", { "northeast" })
+local lo = S.map.rooms[one("Loru")]
+local rn = createRoomID(); addRoom(rn); setRoomArea(rn, lo.area)
+setRoomName(rn, "Rogue NE"); setRoomCoordinates(rn, lo.x + 1, lo.y + 1, lo.z)
+setRoomUserData(rn, "fp", "Rogue NE|south")
+go("ne", "Cathedral", { "southwest" })
+local cr = S.map.rooms[one("Cathedral")]
+assert(cr.x > lo.x and cr.y > lo.y, "NE room not north-east of source: "
+    .. (cr.x - lo.x) .. "," .. (cr.y - lo.y))
+
+-- a blocked cell slides the room out along the exit, not sideways
+fresh(); start("W", { "east" })
+local wr = S.map.rooms[one("W")]
+local rw = createRoomID(); addRoom(rw); setRoomArea(rw, wr.area)
+setRoomName(rw, "Rogue E"); setRoomCoordinates(rw, wr.x + 1, wr.y, wr.z)
+setRoomUserData(rw, "fp", "Rogue E|west")
+go("e", "E2", { "west" })
+local er = S.map.rooms[one("E2")]
+assert(er.y == wr.y and er.x == wr.x + 2, "east room not slid straight east")
+
 -- a nudged room must not steal the cell another listed exit of its
 -- source will want (north), or the next real north room is nudged too
 fresh(); start("A", { "east", "north" })

@@ -45,6 +45,9 @@ rmap.settings = {
     -- the sent command; extend during calibration.
     verifyVerbs = { look = true, l = true, glance = true },
     previewVerbs = { peer = true, scry = true },
+    -- Teleports that work from any room: they re-sync by fingerprint, never
+    -- become a special exit (a "wizhome" link on every room walked from).
+    teleportVerbs = { ["goto"] = true, wizhome = true, home = true },
 
     -- Lines that cancel the head expectation (a move that did not move).
     moveFail = { "^You can't go that way!" },

@@ -24,6 +24,7 @@ local function classify(cmd)
     local word = cmd:match("^(%S+)")
     if rmap.settings.verifyVerbs[word] then return "VERIFY" end
     if rmap.settings.previewVerbs[word] then return "PREVIEW" end
+    if rmap.settings.teleportVerbs[word] then return "TELEPORT" end
     if dirAlias[cmd] then return "ADVANCE", dirAlias[cmd] end
     return "MAYBE_MOVE"
 end
@@ -104,6 +105,10 @@ end
 
 local function resolve(e, b)
     if e.kind == "PREVIEW" then return end
+    if e.kind == "TELEPORT" then
+        T.pos = rmap.build.find(b.fingerprint)       -- known room or lost, never a link
+        return
+    end
     local cur = T.pos
     -- mapping off: follow what is already mapped, never write the graph
     local move = rmap.mapping and rmap.build or { advance = rmap.build.follow,
