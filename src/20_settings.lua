@@ -47,13 +47,19 @@ rmap.settings = {
     previewVerbs = { peer = true, scry = true },
     -- Teleports that work from any room: they re-sync by fingerprint, never
     -- become a special exit (a "wizhome" link on every room walked from).
+    -- Freeform verbs that mean "back the way you came in": from a room entered
+    -- by another exit they lead back to it, even among look-alikes.
+    leaveVerbs = { out = true, leave = true, exit = true, back = true },
     teleportVerbs = { ["goto"] = true, wizhome = true, home = true },
 
     -- Lines that cancel the head expectation (a move that did not move).
     moveFail = { "^You can't go that way!" },
 
-    -- Fingerprint search radius (Chebyshev) for non-Euclidean links.
-    maxSearchDistance = 5,
+    -- Fold an exit onto a look-alike room that sits two cells from where it
+    -- points (a non-Euclidean map). Off: in the areas walked it only ever
+    -- merged different rooms that share a name and exits (forests, camps),
+    -- and a duplicate is easy to merge by hand while a false merge breaks paths.
+    nearMerge = false,
     -- Freeform verbs that are vertical in meaning: layers to climb (layout
     -- only; the link is by room id either way).
     freeformDz = { climb = 1 },

@@ -97,14 +97,14 @@ local function exitsLine(ex)
     local head = table.concat(ex, ", ", 1, #ex - 1)
     return "Obvious exits are: " .. head .. ", and " .. ex[#ex] .. "."
 end
-local function show(name, ex, weather)
+local function show(name, ex, weather, desc)
     rmap.onLine(name)
-    rmap.onLine("  A place.")
+    rmap.onLine("  " .. (desc or "A place."))
     rmap.onLine(weather or " The sky is overcast.")
     rmap.onLine(exitsLine(ex))
     rmap.onLine(PROMPT)
 end
-local function go(cmd, name, ex) send(cmd); show(name, ex) end
+local function go(cmd, name, ex, desc) send(cmd); show(name, ex, nil, desc) end
 local function start(name, ex)    -- first block is spontaneous: adopt it
     local got
     local id = registerAnonymousEventHandler("rmap.onRoom",
@@ -139,13 +139,13 @@ go("e", "C", { "west" })
 assert(S.roomCount() == 3 and rmap.track.pos == (one("C")), "e after fail")
 
 -- fixture 4: coordinate loop and non-Euclidean fingerprint revisit
-fresh(); start("A", { "east", "south" })
+fresh(); rmap.settings.nearMerge = true; start("A", { "east", "south" })
 go("e", "B", { "south", "west" })
 go("s", "C", { "north", "west" })
 go("w", "D", { "east", "north" })
 go("n", "A", { "east", "south" })           -- coordinates say A is here
 assert(S.roomCount() == 4 and rmap.track.pos == (one("A")), "loop")
-fresh(); start("A", { "east" })
+fresh(); rmap.settings.nearMerge = true; start("A", { "east" })
 go("e", "B", { "south", "west" })
 go("e", "C", { "west", "east" })
 go("e", "D", { "west", "north" })
@@ -297,7 +297,7 @@ assert(next(getSpecialExitsSwap(tcell)) == nil, "teleport became a special exit"
 -- a generic room (fingerprint on several rooms) is never folded onto a
 -- distant look-alike: the new room is made (air/sylvan false merge)
 local GX = { "east", "north", "south", "west" }
-fresh(); start("Glen", GX)
+fresh(); rmap.settings.nearMerge = true; start("Glen", GX)
 go("e", "Glen", GX); go("e", "Glen", GX)
 local g3 = rmap.track.pos
 go("w", "Glen", GX); go("w", "Glen", GX)
@@ -308,7 +308,7 @@ assert(S.roomCount() == before + 1 and rmap.track.pos ~= g3,
 
 -- a look-alike one cell from the free expected cell is a neighbour, not a
 -- fold: the new room is made (water/cairn false merge)
-fresh(); start("Pa", { "east" })
+fresh(); rmap.settings.nearMerge = true; start("Pa", { "east" })
 go("e", "Marsh", { "east", "northeast" })
 go("e", "Q", { "north" })
 go("n", "R", { "north" })
@@ -343,6 +343,59 @@ go("out", "Hall", HN)
 assert(rmap.track.pos == hall3 and S.roomCount() == nc,
     "freeform way out of a compass-entered room made a duplicate")
 
+-- a hallway reached by a freeform exit is only dropped on a free cell next
+-- to its room; a compass exit from it must not "find" that room there
+-- (water/lud: identical dorm rooms)
+fresh(); start("Dorm", { "out" })
+local dorm = rmap.track.pos
+go("out", "Hall", { "east" })
+local hall = rmap.track.pos
+local dx, dy, dz = getRoomCoordinates(dorm)
+setRoomCoordinates(hall, dx - 1, dy, dz)       -- adjacent by coincidence
+local nd = S.roomCount()
+go("e", "Dorm", { "out" })
+assert(rmap.track.pos ~= dorm and S.roomCount() == nd + 1,
+    "freeform-placed room trusted as an adjacent cell")
+
+-- rooms that read differently are different rooms even when the name and
+-- exits match: the second "Short path" is not folded onto the first
+-- (water/camp: two camps, two look-alike paths)
+fresh(); start("A", { "east" })
+go("e", "B", { "south", "west" }, "The hoplite tents.")
+go("e", "C", { "west", "east" })
+go("e", "D", { "west", "north" })
+go("n", "B", { "south", "west" }, "The myrmidon tents.")
+assert(S.roomCount() == 5, "look-alike with another description was folded")
+
+-- a freeform exit into a room that looks like one seen before is a new
+-- room unless it is the way back to where we came in (water/camp: the same
+-- barracks tent in two camps)
+fresh(); start("Camp", { "tent", "east" })
+go("tent", "Tent", { "out" })
+go("out", "Camp", { "tent", "east" })       -- the way back: same room
+assert(S.roomCount() == 2, "way back made a copy")
+go("e", "Camp2", { "tent", "west" })
+go("tent", "Tent", { "out" })                -- another camp's tent
+assert(S.roomCount() == 4, "identical tent in another camp was folded")
+
+-- a look-alike far from where the exit points is a coincidence, not a fold
+-- (water/cairn, air/cloud_palace: far rooms that were unique so far)
+fresh(); rmap.settings.nearMerge = true; start("A", { "east" })
+go("e", "B", { "east", "south", "west" })
+go("e", "C", { "east", "west" })
+go("e", "D", { "east", "west" })
+go("e", "E", { "east", "west" })
+go("e", "F", { "north", "west" })
+go("n", "B", { "east", "south", "west" })
+assert(S.roomCount() == 7, "far look-alike was folded")
+
+-- a room entered by a freeform exit whose only exit is vertical is on the
+-- other level of its origin, so the way back lands on it (attic -> down)
+fresh(); start("Floor", { "attic", "north" })
+go("attic", "Store", { "down" })
+go("down", "Floor", { "attic", "north" })
+assert(S.roomCount() == 2, "vertical way back made a copy")
+
 -- two unrelated places synced with `rmap where` get separate areas
 fresh(); start("Place One", { "north" })
 local p1 = one("Place One")
@@ -371,6 +424,19 @@ setRoomUserData(rw, "fp", "Rogue E|west")
 go("e", "E2", { "west" })
 local er = S.map.rooms[one("E2")]
 assert(er.y == wr.y and er.x == wr.x + 2, "east room not slid straight east")
+
+-- a crowded exit still points the right way: with the next five cells
+-- east all taken, the room slides out to the sixth, not to a side cell
+fresh(); start("W2", { "east" })
+local w2 = S.map.rooms[one("W2")]
+for k = 1, 5 do
+    local r = createRoomID(); addRoom(r); setRoomArea(r, w2.area)
+    setRoomName(r, "Wall" .. k); setRoomCoordinates(r, w2.x + k, w2.y, w2.z)
+    setRoomUserData(r, "fp", "Wall" .. k .. "|west")
+end
+go("e", "E6", { "west" })
+local e6 = S.map.rooms[one("E6")]
+assert(e6.y == w2.y and e6.x == w2.x + 6, "crowded east exit not on its own row")
 
 -- a nudged room must not steal the cell another listed exit of its
 -- source will want (north), or the next real north room is nudged too
