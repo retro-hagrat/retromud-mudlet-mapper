@@ -12,7 +12,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud"
-rmap.version = "0.0.24"
+rmap.version = "0.0.25"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
@@ -132,13 +132,19 @@ rmap.settings = {
     previewVerbs = { peer = true, scry = true },
     -- Teleports that work from any room: they re-sync by fingerprint, never
     -- become a special exit (a "wizhome" link on every room walked from).
+    -- Freeform verbs that mean "back the way you came in": from a room entered
+    -- by another exit they lead back to it, even among look-alikes.
+    leaveVerbs = { out = true, leave = true, exit = true, back = true },
     teleportVerbs = { ["goto"] = true, wizhome = true, home = true },
 
     -- Lines that cancel the head expectation (a move that did not move).
     moveFail = { "^You can't go that way!" },
 
-    -- Fingerprint search radius (Chebyshev) for non-Euclidean links.
-    maxSearchDistance = 5,
+    -- Fold an exit onto a look-alike room that sits two cells from where it
+    -- points (a non-Euclidean map). Off: in the areas walked it only ever
+    -- merged different rooms that share a name and exits (forests, camps),
+    -- and a duplicate is easy to merge by hand while a false merge breaks paths.
+    nearMerge = false,
     -- Freeform verbs that are vertical in meaning: layers to climb (layout
     -- only; the link is by room id either way).
     freeformDz = { climb = 1 },
@@ -806,7 +812,30 @@ local function link(from, to, dir)
     setExitStub(from, n, false)
 end
 
-local function create(b, x, y, z, peer, from)
+-- What the room reads like: the start of its description, lowercased with
+-- punctuation squeezed out. The fingerprint is only name + exits, so two
+-- rooms that differ in what they say are different rooms; the text can veto a
+-- guess (it never makes one), and rooms without it (seeds) are never vetoed.
+local function descKey(b)
+    local t = {}
+    for i = 2, #(b.lines or {}) - 1 do t[#t + 1] = b.lines[i] end
+    return (table.concat(t, " "):lower():gsub("%W+", " ")):sub(1, 100)
+end
+
+local function sameDesc(id, b)
+    local d, k = getRoomUserData(id, "desc"), descKey(b)
+    return d == nil or d == "" or k == "" or d == k
+end
+
+-- Coordinate frame: rooms reached by compass exits share their origin's
+-- frame; a freeform exit or an orphan sync starts a new one, since where it
+-- puts the room is only a free cell. Geometry-based reuse (the room on the
+-- expected cell, near) is trusted within one frame only.
+local function frame(id)
+    return getRoomUserData(id, "comp")
+end
+
+local function create(b, x, y, z, peer, from, newFrame)
     local id = createRoomID()
     addRoom(id)
     setRoomArea(id, areaFor(from))
@@ -817,6 +846,8 @@ local function create(b, x, y, z, peer, from)
     -- the room it was entered from: a freeform way out of it (out, leave)
     -- leads back there (see B.special)
     if from then setRoomUserData(id, "via", tostring(from)) end
+    setRoomUserData(id, "comp", (from and not newFrame) and frame(from) or tostring(id))
+    setRoomUserData(id, "desc", descKey(b))
     return id
 end
 
@@ -855,13 +886,17 @@ end
 -- nearest free cells the one whose bearing from the source cell (sx, sy)
 -- is closest to the exit's, then the closest to the source. Cells are
 -- checked in `area`, the area the new room will join.
+-- cells a room may slide along its exit's own direction: a long link in
+-- the right direction beats a short one that points the wrong way
+local RAY_MAX = 16
+
 local function freeCell(x, y, z, reserved, sx, sy, area)
     reserved = reserved or {}
     -- first slide the room outward along the exit's own ray, which keeps
     -- its compass bearing exact; only then search the grid around it
     local ux, uy = x - (sx or x), y - (sy or y)
     if ux ~= 0 or uy ~= 0 then
-        for k = 0, 3 do
+        for k = 0, RAY_MAX do
             local cx, cy = x + k * ux, y + k * uy
             if not roomAt(cx, cy, z, area) and not reserved[cx .. "," .. cy .. "," .. z] then
                 return cx, cy, z
@@ -917,9 +952,21 @@ local function leadsTo(from)
     return taken
 end
 
+-- The room `from` was entered from, when this arrival looks like it and no
+-- exit of `from` already leads there. Only for verbs that mean "go back out"
+-- (leaveVerbs): a compass exit could just as well reach a look-alike sibling.
+local function cameFrom(from, b)
+    local ok, v = pcall(function() return tonumber(getRoomUserData(from, "via")) end)
+    if ok and v and v ~= from and select(1, pcall(B.fp, v)) and B.fp(v) == b.fingerprint
+        and sameDesc(v, b) and not leadsTo(from)[v] then
+        return v
+    end
+end
+
 -- Non-Euclidean link (decision step 2): the single nearby room with this
 -- fingerprint whose way back toward us is not already linked elsewhere.
-local function near(from, fp, opp, dir)
+local function near(from, fp, opp, dir, blk)
+    if not rmap.settings.nearMerge then return nil end
     local x, y, z = getRoomCoordinates(from)
     local d = rmap.settings.dirs[dir]
     local ex, ey, ez = x + d.dx, y + d.dy, z + d.dz     -- the cell the exit points at
@@ -935,13 +982,16 @@ local function near(from, fp, opp, dir)
         -- the room already linked behind us is never "ahead" (a
         -- corridor of identical rooms would fold back on itself)
         if id ~= from and getRoomArea(id) == getRoomArea(from)
+            and frame(id) == frame(from)
+            and sameDesc(id, blk)
             and (not back or back == from)
             and not taken[id]
             -- a look-alike right beside the free expected cell is a
             -- neighbour in the layout, not a fold back onto itself
             and not (c == ez and math.max(math.abs(a - ex), math.abs(b - ey)) <= 1)
-            and math.max(math.abs(a - x), math.abs(b - y),
-                math.abs(c - z)) <= rmap.settings.maxSearchDistance then
+            -- layout drift is small: a fold lands two cells from where the
+            -- exit points; a look-alike farther off is a coincidence
+            and c == ez and math.max(math.abs(a - ex), math.abs(b - ey)) == 2 then
             if hit then return nil end               -- ambiguous
             hit = id
         end
@@ -985,6 +1035,8 @@ function B.advance(from, dir, b, peer)
     -- a different room there means the map does not fit the grid, so
     -- ignore it (links, not cells, are the truth).
     if to and not linked and B.fp(to) ~= b.fingerprint then to = nil end
+    if to and not linked and frame(to) ~= frame(from) then to = nil end
+    if to and not linked and not sameDesc(to, b) then to = nil end
     -- ...and a look-alike whose way back already leads to another room is
     -- that room's neighbour, not ours (a forest of identical rooms)
     if to and not linked then
@@ -1000,7 +1052,7 @@ function B.advance(from, dir, b, peer)
     end
     -- a preview must not fold two look-alike neighbours into one room:
     -- only a real link (or the cell guess above) may reuse a room
-    to = to or (not peer and near(from, b.fingerprint, d.opp, dir)) or nil
+    to = to or (not peer and near(from, b.fingerprint, d.opp, dir, b)) or nil
     if to then
         if B.fp(to) ~= b.fingerprint then return nil end
         link(from, to, dir)
@@ -1035,17 +1087,10 @@ function B.special(from, cmd, b, peer)
     -- a walked move may land in a known room; a preview never merges by
     -- fingerprint alone (look-alike rooms are different rooms)
     if not to and not peer then
-        to = B.find(b.fingerprint)
-        if to and leadsTo(from)[to] then to = nil end
-        -- a freeform way out of a room entered by a freeform exit, onto a
-        -- room that looks like the one we came in from, leads back there
-        if not to then
-            local ok, v = pcall(function() return tonumber(getRoomUserData(from, "via")) end)
-            if ok and v and select(1, pcall(B.fp, v)) and B.fp(v) == b.fingerprint
-                and v ~= from and not leadsTo(from)[v] then
-                to = v
-            end
-        end
+        -- a freeform exit has no geometry to check a guess against, and a
+        -- fingerprint seen once proves nothing (identical tents in two camps):
+        -- only a way back to the room we came in from is taken for a known room
+        to = cameFrom(from, b)
     end
     -- a peered neighbour that looks like this room is another room, not a loop
     if to == from then to = nil end
@@ -1055,9 +1100,16 @@ function B.special(from, cmd, b, peer)
     else
         local x, y, z = getRoomCoordinates(from)
         -- nearest free cell beside the room, off its cardinal exits' cells
-        x, y, z = freeCell(x, y, z + (rmap.settings.freeformDz[cmd] or 0),
+        -- a room whose only exit is vertical sits on the other level of its
+        -- origin (attic -> down), a real alignment like a vertical verb
+        local dz = rmap.settings.freeformDz[cmd] or 0
+        local only = #b.exits == 1 and rmap.settings.dirs[b.exits[1]]
+        if dz == 0 and only and only.dz ~= 0 then dz = -only.dz end
+        x, y, z = freeCell(x, y, z + dz,
             reservedFor(from), x, y, areaFor(from))
-        to = create(b, x, y, z, peer, from)
+        -- a vertical verb (climb) is drawn exactly one layer up, a real
+        -- alignment, so it keeps the frame; any other freeform exit does not
+        to = create(b, x, y, z, peer, from, dz == 0)
         B.created[#B.created + 1] = { id = to, from = from, cmd = cmd }
         stub(to, b)
     end
