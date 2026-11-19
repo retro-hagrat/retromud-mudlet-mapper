@@ -8,14 +8,14 @@ built into one self-contained `.mpackage` for distribution.
 
 ## Install
 
-1. Get `retromud.mpackage`: download it from the [releases page](https://github.com/retro-hagrat/retromud-mudlet-mapper/releases) or from the `dist` directory of this repo
-2. In Mudlet (4.17 or newer), open **Toolbox → Package Manager** (`Alt+O`), click **Install**, and pick `retromud.mpackage`. Or run `lua installPackage("/full/path/to/retromud.mpackage")` in the command line.
+1. Get `retromud-mapper.mpackage`: download it from the [releases page](https://github.com/retro-hagrat/retromud-mudlet-mapper/releases) or from the `dist` directory of this repo
+2. In Mudlet (4.17 or newer), open **Toolbox → Package Manager** (`Alt+O`), click **Install**, and pick `retromud-mapper.mpackage`. Or run `lua installPackage("/full/path/to/retromud-mapper.mpackage")` in the command line.
 3. Connect to RetroMUD (retromud.org) with a **mortal** character; wizard room display differs and will not map correctly.
 4. The maps of all 19 guilds go into your map as soon as the package is installed (one area per guild, in the area list; rooms you have already mapped are never touched). Mapping starts by itself: a new character is placed on their guild's start room, and a returning player's mapping resumes when the first room appears. Walk around. Type `rmap stop` to pause mapping (the mapper remembers that next session) and `rmap start` to resume. Type `rmap help` for the command list.
 
 Useful first commands: `rmap where` re-syncs your position, `rmap scan` maps every exit of the current room, `rmap undo` removes the last auto-created room.
 
-To update, uninstall the old `retromud` package in the Package Manager, then install the new file.
+To update, uninstall the installed mapper package (`retromud-mapper`, or `retromud` if you have the old name) in the Package Manager, then install the new file.
 
 ## Documentation
 

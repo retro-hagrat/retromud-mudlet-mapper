@@ -15,7 +15,7 @@ def main():
     b = subprocess.run([sys.executable, os.path.join(ROOT, "build.py")])
     if b.returncode:
         return 2
-    body = os.path.join(ROOT, "dist", "retromud.lua")
+    body = os.path.join(ROOT, "dist", "retromud-mapper.lua")
     s = subprocess.run([lua(), os.path.join(HERE, "smoke.lua"), body],
                        capture_output=True, text=True)
     if s.returncode:

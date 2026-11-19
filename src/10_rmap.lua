@@ -11,7 +11,7 @@ local wasStarted = rmap and rmap.started
 if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
-rmap.name = "retromud"
+rmap.name = "retromud-mapper"
 rmap.version = "0.0.25"
 rmap.inits = {}
 rmap.started = false

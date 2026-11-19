@@ -1,4 +1,11 @@
--- 10_rm: namespace, version, lifecycle, event wiring.
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MudletPackage>
+<MudletPackage version="1.001">
+<ScriptPackage>
+<Script isActive="yes" isFolder="no">
+<name>retromud-mapper</name>
+<packageName></packageName>
+<script>-- 10_rm: namespace, version, lifecycle, event wiring.
 -- Contract (docs/design.md): one global namespace `rmap`, nothing else leaks.
 -- Load/install (sysLoadEvent, sysInstall) runs rmap.start(), which runs the
 -- init functions other modules appended to rmap.inits (they build their
@@ -11,7 +18,7 @@ local wasStarted = rmap and rmap.started
 if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
-rmap.name = "retromud"
+rmap.name = "retromud-mapper"
 rmap.version = "0.0.25"
 rmap.inits = {}
 rmap.started = false
@@ -29,11 +36,11 @@ function rmap.out(text, level)
     local last = getLastLineNumber("main")
     local cur = getLines(last, last + 1)[1]
     if cur and cur ~= "" then echo("\n") end
-    if level ~= "markup" then text = text:gsub("<", "<<") end
+    if level ~= "markup" then text = text:gsub("&lt;", "&lt;&lt;") end
     if level == "plain" or level == "markup" then
         cecho(text .. "\n")
     else
-        cecho("<" .. (COLOR[level] or "cyan") .. ">[rmap]<reset> "
+        cecho("&lt;" .. (COLOR[level] or "cyan") .. "&gt;[rmap]&lt;reset&gt; "
             .. text .. "\n")
     end
 end
@@ -185,7 +192,7 @@ rmap.settings = {
     },
 }
 
--- 30_capture: line buffer -> room-block detection -> rmap.onRoom event.
+-- 30_capture: line buffer -&gt; room-block detection -&gt; rmap.onRoom event.
 -- Contract (docs/design.md, docs/output-format.md): rmap.onLine(line) is
 -- called once per received line (a trigger live, the replay harness
 -- offline). Segments end at a prompt: isPrompt() (GA/EOR) live, else
@@ -243,8 +250,8 @@ end
 -- Nearest non-noise, non-indented line above d, or nil.
 local function titleAbove(buf, lo, d)
     local t = d - 1
-    while t >= lo and (isNoise(buf[t]) or buf[t]:find("^%s")) do t = t - 1 end
-    if t >= lo then return t end
+    while t &gt;= lo and (isNoise(buf[t]) or buf[t]:find("^%s")) do t = t - 1 end
+    if t &gt;= lo then return t end
 end
 
 -- Walk back from each exits line to a description start: a line indented
@@ -272,7 +279,7 @@ end
 local function bareTitle(buf, lo, i)
     for t = lo, i - 2 do
         local l = buf[t]
-        if not isNoise(l) and not l:find("^%s") and #l <= 60
+        if not isNoise(l) and not l:find("^%s") and #l &lt;= 60
             and not l:find("[%.!?'\"%]%)]%s*$") and titleLike(l)
             and not isNoise(buf[t + 1]) then
             return t
@@ -283,7 +290,7 @@ end
 -- Returns the index after the last exits line handled.
 local function scan(buf)
     local lo, i = 1, 1
-    while i <= #buf do
+    while i &lt;= #buf do
         local exits, last = parseExits(buf, i)
         if exits then
             local t = findTitle(buf, lo, i) or bareTitle(buf, lo, i)
@@ -351,7 +358,7 @@ function rmap.onLine(line)
         end
     end
     c.buf[#c.buf + 1] = line
-    if #c.buf > rmap.settings.maxBlockLines then
+    if #c.buf &gt; rmap.settings.maxBlockLines then
         if not c.warned then
             c.warned = true
             rmap.out("no usable prompt (no GA, and the prompt "
@@ -382,7 +389,7 @@ end
 rmap.track = { q = {}, pos = nil, handled = false, following = false }
 local T = rmap.track
 
--- name or abbreviation -> full direction name
+-- name or abbreviation -&gt; full direction name
 local dirAlias = {}
 for name, d in pairs(rmap.settings.dirs) do
     dirAlias[name] = name
@@ -410,7 +417,7 @@ end
 local function expire()
     local cutoff = rmap.now() - rmap.settings.expectTimeout
     local dead = {}
-    while T.q[1] and T.q[1].t < cutoff do
+    while T.q[1] and T.q[1].t &lt; cutoff do
         local e = table.remove(T.q, 1)
         dead[#dead + 1] = e
         -- a step we never saw land leaves us unsure where we are; a late
@@ -425,7 +432,7 @@ end
 -- SYNCED / PENDING / UNSYNCED (PENDING = synced with a command in flight)
 function T.state()
     if not T.pos then return "UNSYNCED" end
-    if #T.q > 0 then return "PENDING" end
+    if #T.q &gt; 0 then return "PENDING" end
     return "SYNCED"
 end
 
@@ -550,7 +557,7 @@ end
 function T.onSegment(_, n, soft)
     expire()
     local e, head = nil, T.q[1]
-    if not T.handled and not soft and n > 0 and head
+    if not T.handled and not soft and n &gt; 0 and head
         and head.kind ~= "ADVANCE" then
         e = table.remove(T.q, 1)
     end
@@ -569,7 +576,7 @@ rmap.inits[#rmap.inits + 1] = function()
 end
 
 -- 45_seed: put every guild map into the player's map, and welcome a new player.
--- Contract: build.py embeds each seeds/<guild>.json as rmap.seedData. Whenever the
+-- Contract: build.py embeds each seeds/&lt;guild&gt;.json as rmap.seedData. Whenever the
 -- package starts, and again at the first room block of a session, every seed the
 -- map has not yet had is merged in as its own area (named for the guild). Merging adds
 -- rooms with fresh ids and never touches or replaces a room the player already has
@@ -764,7 +771,7 @@ local function areaId()
 end
 
 -- The area a room entered from `from` joins: its origin's, so walking out of
--- a seeded guild map stays in that guild's area. `rmap area <name>` pins the
+-- a seeded guild map stays in that guild's area. `rmap area &lt;name&gt;` pins the
 -- setting instead; a room with no origin (adopt) uses the setting too.
 local function areaFor(from)
     if not rmap.settings.areaPinned and from then
@@ -916,10 +923,10 @@ local function freeCell(x, y, z, reserved, sx, sy, area)
                         local vx, vy, ux, uy = cx - sx, cy - sy, x - sx, y - sy
                         local len = math.sqrt(vx * vx + vy * vy) * math.sqrt(ux * ux + uy * uy)
                         -- bearing off by 1-cos in 1e-6 steps; none for up/down/freeform (u = 0)
-                        local off = len > 0 and math.floor((1 - (vx * ux + vy * uy) / len) * 1e6 + 0.5) or 0
+                        local off = len &gt; 0 and math.floor((1 - (vx * ux + vy * uy) / len) * 1e6 + 0.5) or 0
                         d = off * 1e4 + vx * vx + vy * vy
                     end
-                    if not bd or d < bd then bx, by, bd = cx, cy, d end
+                    if not bd or d &lt; bd then bx, by, bd = cx, cy, d end
                 end
             end
         end
@@ -975,7 +982,7 @@ local function near(from, fp, opp, dir, blk)
     local all = candidates(fp)
     -- a fingerprint on many rooms (a forest, a marsh) proves nothing: a
     -- duplicate is easy to merge by hand, a false merge breaks paths
-    if #all > 1 then return nil end
+    if #all &gt; 1 then return nil end
     for _, id in ipairs(all) do
         local a, b, c = getRoomCoordinates(id)
         local back = getRoomExits(id)[opp]
@@ -988,7 +995,7 @@ local function near(from, fp, opp, dir, blk)
             and not taken[id]
             -- a look-alike right beside the free expected cell is a
             -- neighbour in the layout, not a fold back onto itself
-            and not (c == ez and math.max(math.abs(a - ex), math.abs(b - ey)) <= 1)
+            and not (c == ez and math.max(math.abs(a - ex), math.abs(b - ey)) &lt;= 1)
             -- layout drift is small: a fold lands two cells from where the
             -- exit points; a look-alike farther off is a coincidence
             and c == ez and math.max(math.abs(a - ex), math.abs(b - ey)) == 2 then
@@ -1101,7 +1108,7 @@ function B.special(from, cmd, b, peer)
         local x, y, z = getRoomCoordinates(from)
         -- nearest free cell beside the room, off its cardinal exits' cells
         -- a room whose only exit is vertical sits on the other level of its
-        -- origin (attic -> down), a real alignment like a vertical verb
+        -- origin (attic -&gt; down), a real alignment like a vertical verb
         local dz = rmap.settings.freeformDz[cmd] or 0
         local only = #b.exits == 1 and rmap.settings.dirs[b.exits[1]]
         if dz == 0 and only and only.dz ~= 0 then dz = -only.dz end
@@ -1211,7 +1218,7 @@ function rmap.speedwalk()
     local function step()
         if not live() then return end
         i = i + 1
-        if i > #dirs then
+        if i &gt; #dirs then
             rmap.job = nil
             rmap.out("speedwalk: arrived", "ok")
             return
@@ -1241,7 +1248,7 @@ end
 -- kill-switch; pure consumer of tracker/builder state.
 -- Phase 0: empty; implemented in Phase 5.
 
--- 80_commands: all aliases (`rmap <command>`).
+-- 80_commands: all aliases (`rmap &lt;command&gt;`).
 -- Contract (docs/design.md): rmap start/stop/goto/path/where/scan/undo/fix/
 -- save/load/prompt(Phase 6)/exits/fail/debug/ui/reload/help. Pure
 -- consumer of the other modules.
@@ -1260,7 +1267,7 @@ function rmap.commands.help()
         { "rmap undo", "remove the last auto-created room" },
         { "rmap area [name]", "show, or pin, the area new rooms go into (default: their origin room's)" },
     }) do
-        rmap.out(string.format("  <cyan>%-16s<reset>%s", c[1], c[2]), "markup")
+        rmap.out(string.format("  &lt;cyan&gt;%-16s&lt;reset&gt;%s", c[1], c[2]), "markup")
     end
 end
 
@@ -1302,7 +1309,7 @@ end
 -- Peer each exit of `b` and drop candidate rooms whose known neighbour
 -- through that exit has another fingerprint. Calls done(room or nil).
 local function narrow(c, b, i, id, done)
-    if #c <= 1 then return done(c[1]) end
+    if #c &lt;= 1 then return done(c[1]) end
     local ex = b.exits[i]
     if not ex then return done(nil) end
     T.exec("peer " .. ex, function(pb)
@@ -1321,8 +1328,8 @@ local function narrow(c, b, i, id, done)
     end)
 end
 
--- rmap where: look; unique fingerprint -> synced; several -> disambiguate
--- by peering; none -> report (or adopt when mapping). cb(ok) when done.
+-- rmap where: look; unique fingerprint -&gt; synced; several -&gt; disambiguate
+-- by peering; none -&gt; report (or adopt when mapping). cb(ok) when done.
 local function where(cb)
     local id = rmap.jobId
     T.exec("look", function(b)
@@ -1854,3 +1861,8 @@ rmap.seedData = {
         {14, "Templar Check Room", 0, -1, 0, {["northeast"] = 2}, {}, {["bl"] = "", ["fp"] = "Templar Check Room|northeast", ["source"] = "walk"}},
     } },
 }
+</script>
+<eventHandlerList />
+</Script>
+</ScriptPackage>
+</MudletPackage>

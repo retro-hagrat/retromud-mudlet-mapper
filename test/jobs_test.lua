@@ -396,21 +396,21 @@ rmap.job = "scan"; doSpeedWalk()
 assert(said():find("busy", 1, true))
 rmap.job = nil
 -- uninstall removes the global and the timer
-S.fire("sysUninstallPackage", "retromud")
+S.fire("sysUninstallPackage", "retromud-mapper")
 assert(doSpeedWalk == nil and #S.timers == 0)
 -- the profile's own doSpeedWalk comes back on uninstall...
 local function mine() end
 S.reset(); S.install(); doSpeedWalk = mine
 S.load(body); S.fire("sysLoadEvent")
 assert(doSpeedWalk == rmap.speedwalk)
-S.fire("sysUninstallPackage", "retromud")
+S.fire("sysUninstallPackage", "retromud-mapper")
 assert(doSpeedWalk == mine, "profile doSpeedWalk not restored")
 -- ...unless a package installed after us has taken the name over
 local theirs = function() end
 S.reset(); S.install(); doSpeedWalk = mine
 S.load(body); S.fire("sysLoadEvent")
 doSpeedWalk = theirs
-S.fire("sysUninstallPackage", "retromud")
+S.fire("sysUninstallPackage", "retromud-mapper")
 assert(doSpeedWalk == theirs, "restore stomped a later package")
 -- scan: a neighbour with this room's own fingerprint is no self-loop
 fresh({ A = room("Twin", { gate = "B" }), B = room("Twin", { gate = "A" }) }, "A")

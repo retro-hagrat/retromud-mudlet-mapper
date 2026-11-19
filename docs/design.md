@@ -1,4 +1,4 @@
-# Design — retromud Mudlet package
+# Design — retromud-mapper Mudlet package
 
 Status: agreed design (Nov 2026). Phases 0-4 implemented; UI (Phase 5) not started.
 
@@ -8,7 +8,7 @@ Status: agreed design (Nov 2026). Phases 0-4 implemented; UI (Phase 5) not start
    duplicates** — see [mapper-protocol.md](mapper-protocol.md) for the core
    algorithm.
 2. A Geyser UI layout (mapper pane, status bar) bundled in the same package.
-3. Distribution as a single self-contained `retromud.mpackage` installable via
+3. Distribution as a single self-contained `retromud-mapper.mpackage` installable via
    Mudlet's Package Manager.
 
 ## Non-goals (deferred)
@@ -24,10 +24,10 @@ Developed as modular Lua in `src/` (numbered prefixes fix the load order).
 `build.py`:
 
 1. concatenates `src/*.lua` in filename order into one script body,
-2. emits `retromud.xml` containing a **single `<Script>` element** — no GUI
+2. emits `retromud-mapper.xml` containing a **single `<Script>` element** — no GUI
    triggers, aliases, or timers in the XML,
-3. zips `retromud.xml` + `config.lua` (mpackage manifest) into
-   `dist/retromud.mpackage`,
+3. zips `retromud-mapper.xml` + `config.lua` (mpackage manifest) into
+   `dist/retromud-mapper.mpackage`,
 4. sanity-checks the body (balanced tables/functions; no globals outside the
    `rmap` namespace; version bumped).
 

@@ -1,4 +1,4 @@
-mpackage = [[retromud]]
+mpackage = [[retromud-mapper]]
 author = [[retromud contributors]]
 title = [[RetroMUD mapper]]
 description = [[Trigger-based auto-mapper for RetroMUD (no GMCP).]]

@@ -40,6 +40,6 @@ S.lastLine = nil
 -- script re-run while started: handlers come back without sysLoadEvent
 S.load(arg[1])
 assert(S.alias("rmap help") and #S.handlers > 0, "re-run left mapper dead")
-S.fire("sysUninstallPackage", "retromud")
+S.fire("sysUninstallPackage", "retromud-mapper")
 assert(#S.aliases == 0 and #S.handlers == 0, "uninstall left objects")
 print("smoke ok")
