@@ -12,10 +12,19 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud-mapper"
-rmap.version = "0.0.25"
+rmap.version = "0.0.26"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
+rmap.uiContract = 1
+
+-- The one writer of rmap.mapping: tells the GUI when the flag changes.
+function rmap.setMapping(on)
+    on = on and true or false
+    if rmap.mapping == on then return end
+    rmap.mapping = on
+    raiseEvent("rmap.onMapping", on)
+end
 rmap.ids = { handler = {}, trigger = {}, alias = {} }
 
 -- One tagged line per message: "[rmap] text". level colours the tag:
@@ -64,6 +73,7 @@ function rmap.stop()
     for i = 1, #rmap.ids.trigger do killTrigger(rmap.ids.trigger[i]) end
     for i = 1, #rmap.ids.alias do killAlias(rmap.ids.alias[i]) end
     rmap.job = nil
+    if rmap.pane then pcall(rmap.pane.hide, rmap.pane) end
     if rmap.ids.timer then killTimer(rmap.ids.timer) end
     -- the one documented global exception (see 60_speedwalk): put back the
     -- profile's own, but only if the global is still ours

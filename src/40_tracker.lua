@@ -36,6 +36,29 @@ local function done(e, b, why)
     if e and e.cb then e.cb(b, why) end
 end
 
+-- room id, name and area name of the current position (nil when UNSYNCED)
+function T.where()
+    if not T.pos then return end
+    local ok, name, area = pcall(function()
+        return getRoomName(T.pos), getRoomAreaName(getRoomArea(T.pos))
+    end)
+    if ok then return T.pos, name, area end
+    return T.pos
+end
+
+-- Tell the GUI when the sync state or the position changed since last time.
+function T.notify()
+    local st = T.state()
+    if st ~= T.lastState then
+        T.lastState = st
+        raiseEvent("rmap.onState", st)
+    end
+    if T.pos and T.pos ~= T.lastPos then
+        raiseEvent("rmap.onMoved", T.where())
+    end
+    T.lastPos = T.pos
+end
+
 local function expire()
     local cutoff = rmap.now() - rmap.settings.expectTimeout
     local dead = {}
@@ -49,6 +72,7 @@ local function expire()
         if e.kind == "ADVANCE" then T.pos = nil end
     end
     for i = 1, #dead do done(dead[i], nil, "timeout") end
+    if #dead > 0 then T.notify() end
 end
 
 -- SYNCED / PENDING / UNSYNCED (PENDING = synced with a command in flight)
@@ -84,6 +108,7 @@ function T.send(_, cmd)
             end
         end
     end
+    T.notify()
 end
 
 -- Internal sends (speedwalk, scan, where) go through send() so that
@@ -135,7 +160,7 @@ function T.focus()
     if T.pos then centerview(T.pos) end
 end
 
-function T.onRoom(_, b)
+local function onRoom(_, b)
     expire()
     T.handled = true
     local e = table.remove(T.q, 1)
@@ -158,6 +183,11 @@ function T.onRoom(_, b)
     done(e, b)
 end
 
+function T.onRoom(...)
+    onRoom(...)
+    T.notify()
+end
+
 -- A failed move cancels the head expectation; nothing was created on send.
 function T.onMoveFail()
     expire()
@@ -167,6 +197,7 @@ function T.onMoveFail()
         rmap.build.reject(T.pos, e.dir)
     end
     done(e, nil, "fail")
+    T.notify()
 end
 
 -- A prompt closed a segment with n real lines. If no room block and no
@@ -188,7 +219,7 @@ function T.onSegment(_, n, soft)
 end
 
 -- Explicit orphan creation / re-sync entry point (used by `rmap where`).
-function T.adopt(b) T.pos = rmap.build.adopt(b) T.focus() end
+function T.adopt(b) T.pos = rmap.build.adopt(b) T.focus() T.notify() end
 
 rmap.inits[#rmap.inits + 1] = function()
     rmap.on("sysDataSendRequest", T.send)

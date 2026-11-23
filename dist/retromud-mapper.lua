@@ -12,10 +12,19 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud-mapper"
-rmap.version = "0.0.25"
+rmap.version = "0.0.26"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
+rmap.uiContract = 1
+
+-- The one writer of rmap.mapping: tells the GUI when the flag changes.
+function rmap.setMapping(on)
+    on = on and true or false
+    if rmap.mapping == on then return end
+    rmap.mapping = on
+    raiseEvent("rmap.onMapping", on)
+end
 rmap.ids = { handler = {}, trigger = {}, alias = {} }
 
 -- One tagged line per message: "[rmap] text". level colours the tag:
@@ -64,6 +73,7 @@ function rmap.stop()
     for i = 1, #rmap.ids.trigger do killTrigger(rmap.ids.trigger[i]) end
     for i = 1, #rmap.ids.alias do killAlias(rmap.ids.alias[i]) end
     rmap.job = nil
+    if rmap.pane then pcall(rmap.pane.hide, rmap.pane) end
     if rmap.ids.timer then killTimer(rmap.ids.timer) end
     -- the one documented global exception (see 60_speedwalk): put back the
     -- profile's own, but only if the global is still ours
@@ -407,6 +417,29 @@ local function done(e, b, why)
     if e and e.cb then e.cb(b, why) end
 end
 
+-- room id, name and area name of the current position (nil when UNSYNCED)
+function T.where()
+    if not T.pos then return end
+    local ok, name, area = pcall(function()
+        return getRoomName(T.pos), getRoomAreaName(getRoomArea(T.pos))
+    end)
+    if ok then return T.pos, name, area end
+    return T.pos
+end
+
+-- Tell the GUI when the sync state or the position changed since last time.
+function T.notify()
+    local st = T.state()
+    if st ~= T.lastState then
+        T.lastState = st
+        raiseEvent("rmap.onState", st)
+    end
+    if T.pos and T.pos ~= T.lastPos then
+        raiseEvent("rmap.onMoved", T.where())
+    end
+    T.lastPos = T.pos
+end
+
 local function expire()
     local cutoff = rmap.now() - rmap.settings.expectTimeout
     local dead = {}
@@ -420,6 +453,7 @@ local function expire()
         if e.kind == "ADVANCE" then T.pos = nil end
     end
     for i = 1, #dead do done(dead[i], nil, "timeout") end
+    if #dead > 0 then T.notify() end
 end
 
 -- SYNCED / PENDING / UNSYNCED (PENDING = synced with a command in flight)
@@ -455,6 +489,7 @@ function T.send(_, cmd)
             end
         end
     end
+    T.notify()
 end
 
 -- Internal sends (speedwalk, scan, where) go through send() so that
@@ -506,7 +541,7 @@ function T.focus()
     if T.pos then centerview(T.pos) end
 end
 
-function T.onRoom(_, b)
+local function onRoom(_, b)
     expire()
     T.handled = true
     local e = table.remove(T.q, 1)
@@ -529,6 +564,11 @@ function T.onRoom(_, b)
     done(e, b)
 end
 
+function T.onRoom(...)
+    onRoom(...)
+    T.notify()
+end
+
 -- A failed move cancels the head expectation; nothing was created on send.
 function T.onMoveFail()
     expire()
@@ -538,6 +578,7 @@ function T.onMoveFail()
         rmap.build.reject(T.pos, e.dir)
     end
     done(e, nil, "fail")
+    T.notify()
 end
 
 -- A prompt closed a segment with n real lines. If no room block and no
@@ -559,7 +600,7 @@ function T.onSegment(_, n, soft)
 end
 
 -- Explicit orphan creation / re-sync entry point (used by `rmap where`).
-function T.adopt(b) T.pos = rmap.build.adopt(b) T.focus() end
+function T.adopt(b) T.pos = rmap.build.adopt(b) T.focus() T.notify() end
 
 rmap.inits[#rmap.inits + 1] = function()
     rmap.on("sysDataSendRequest", T.send)
@@ -668,7 +709,7 @@ function S.onRoom(_, b)
     local welcome = getMapUserData(S.WELCOME) == "pending"
     if welcome then setMapUserData(S.WELCOME, "done") end
     if not welcome and not S.wantsMapping() then return end
-    rmap.mapping = true
+    rmap.setMapping(true)
     if not welcome then
         rmap.out("mapping is on (rmap stop turns it off)", "ok")
         return
@@ -681,10 +722,11 @@ function S.onRoom(_, b)
     end
     rmap.track.pos = id
     rmap.track.focus()
+    rmap.track.notify()
     -- zoom is stored per area: without the area it lands on whichever one was showing
     if setMapZoom then pcall(setMapZoom, rmap.settings.seedZoom, getRoomArea(id)) end
     -- unverified: openMapWidget() exists in Mudlet 4.17+
-    if openMapWidget then pcall(openMapWidget) end
+    if openMapWidget and not rmap.api.container() then pcall(openMapWidget) end
     rmap.out("the guild maps are loaded; mapping is on", "ok")
 end
 
@@ -1236,10 +1278,56 @@ rmap.inits[#rmap.inits + 1] = function()
     doSpeedWalk = rmap.speedwalk
 end
 
--- 70_ui: Geyser container, Geyser.Mapper pane, status label, buttons.
--- Contract (docs/design.md): geometry persisted via settings; `rmap ui off`
--- kill-switch; pure consumer of tracker/builder state.
--- Phase 0: empty; implemented in Phase 5.
+-- 70_ui: the map pane (container "rmap.map") and the public API for the GUI.
+-- Contract (retromud-mudlet-gui doc/design.md): the mapper owns the pane and
+-- raises rmap.onUiReady(name); the GUI moves it. Methods return plain values,
+-- or nil and a reason; they run the same code as the matching `rmap` alias.
+
+local T = rmap.track
+local NAME = "rmap.map"
+
+local function build()
+    if not (Adjustable and Adjustable.Container and Geyser and Geyser.Mapper) then return end
+    local ok, box = pcall(function()
+        local old = Geyser.windowList and Geyser.windowList[NAME]
+        if old then return old end                 -- script re-run: reuse, never duplicate
+        local c = Adjustable.Container:new({ name = NAME, titleText = "Map",
+            x = "60%", y = "0", width = "40%", height = "50%" })
+        Geyser.Mapper:new({ name = "rmap.mapper", x = 0, y = 0,
+            width = "100%", height = "100%" }, c)
+        return c
+    end)
+    if ok and box then
+        rmap.pane = box
+        raiseEvent("rmap.onUiReady", NAME)
+    end
+end
+
+rmap.api = {
+    version = 1,
+    state = function() return T.state() end,
+    position = function() return T.where() end,
+    isMapping = function() return rmap.mapping end,
+    busy = function() return rmap.job end,
+    container = function() return rmap.pane and NAME or nil end,
+    start = function() rmap.commands.start() return true end,
+    stop = function() rmap.commands.stop() return true end,
+    where = function()
+        if not rmap.canRun() then return nil, "busy" end
+        rmap.commands.where() return true
+    end,
+    scan = function()
+        if not rmap.mapping then return nil, "mapping is off" end
+        if not rmap.canRun() then return nil, "busy" end
+        rmap.commands.scan() return true
+    end,
+    undo = function()
+        if rmap.commands.undo() then return true end
+        return nil, "nothing to undo, or busy"
+    end,
+}
+
+rmap.inits[#rmap.inits + 1] = build
 
 -- 80_commands: all aliases (`rmap <command>`).
 -- Contract (docs/design.md): rmap start/stop/goto/path/where/scan/undo/fix/
@@ -1268,12 +1356,12 @@ local T, B = rmap.track, rmap.build
 
 -- the choice is remembered across sessions (see 45_seed)
 function rmap.commands.start()
-    rmap.mapping = true
+    rmap.setMapping(true)
     rmap.seed.remember("on")
     rmap.out("mapping on", "ok")
 end
 function rmap.commands.stop()
-    rmap.mapping = false
+    rmap.setMapping(false)
     rmap.seed.remember("off")
     rmap.out("mapping off", "ok")
 end
@@ -1436,7 +1524,9 @@ function rmap.commands.undo()
     local e = B.undo()
     if not e then return rmap.out("undo: nothing to undo", "skip") end
     if T.pos == e.id then T.pos = nil end
+    T.notify()
     rmap.out("undo: removed '" .. e.name .. "' (room " .. e.id .. ")", "ok")
+    return true
 end
 
 function rmap.command(arg)

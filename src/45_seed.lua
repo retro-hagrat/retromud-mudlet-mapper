@@ -98,7 +98,7 @@ function S.onRoom(_, b)
     local welcome = getMapUserData(S.WELCOME) == "pending"
     if welcome then setMapUserData(S.WELCOME, "done") end
     if not welcome and not S.wantsMapping() then return end
-    rmap.mapping = true
+    rmap.setMapping(true)
     if not welcome then
         rmap.out("mapping is on (rmap stop turns it off)", "ok")
         return
@@ -111,10 +111,11 @@ function S.onRoom(_, b)
     end
     rmap.track.pos = id
     rmap.track.focus()
+    rmap.track.notify()
     -- zoom is stored per area: without the area it lands on whichever one was showing
     if setMapZoom then pcall(setMapZoom, rmap.settings.seedZoom, getRoomArea(id)) end
     -- unverified: openMapWidget() exists in Mudlet 4.17+
-    if openMapWidget then pcall(openMapWidget) end
+    if openMapWidget and not rmap.api.container() then pcall(openMapWidget) end
     rmap.out("the guild maps are loaded; mapping is on", "ok")
 end
 

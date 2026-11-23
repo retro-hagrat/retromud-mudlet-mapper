@@ -25,12 +25,12 @@ local T, B = rmap.track, rmap.build
 
 -- the choice is remembered across sessions (see 45_seed)
 function rmap.commands.start()
-    rmap.mapping = true
+    rmap.setMapping(true)
     rmap.seed.remember("on")
     rmap.out("mapping on", "ok")
 end
 function rmap.commands.stop()
-    rmap.mapping = false
+    rmap.setMapping(false)
     rmap.seed.remember("off")
     rmap.out("mapping off", "ok")
 end
@@ -193,7 +193,9 @@ function rmap.commands.undo()
     local e = B.undo()
     if not e then return rmap.out("undo: nothing to undo", "skip") end
     if T.pos == e.id then T.pos = nil end
+    T.notify()
     rmap.out("undo: removed '" .. e.name .. "' (room " .. e.id .. ")", "ok")
+    return true
 end
 
 function rmap.command(arg)
