@@ -19,6 +19,9 @@ local function build()
     end)
     if ok and box then
         rmap.pane = box
+        -- rmap.stop hides the pane on uninstall, and a rebuilt or reused pane
+        -- comes back hidden (seen live after an update): always show it
+        pcall(box.show, box)
         raiseEvent("rmap.onUiReady", NAME)
     end
 end
@@ -48,3 +51,15 @@ rmap.api = {
 }
 
 rmap.inits[#rmap.inits + 1] = build
+
+-- Mudlet's own generic mapper also reads the prompt and room text, and it
+-- fights this one for the map. Remove it; Package Manager can bring it back.
+rmap.inits[#rmap.inits + 1] = function()
+    if not (getPackages and uninstallPackage) then return end
+    for _, pkg in ipairs(getPackages()) do
+        if pkg == "generic_mapper" then
+            uninstallPackage(pkg)
+            rmap.out("removed Mudlet's generic_mapper (it competes with this mapper)", "skip")
+        end
+    end
+end

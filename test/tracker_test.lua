@@ -575,3 +575,29 @@ clock2 = clock2 + rmap.settings.expectTimeout + 5
 send("look")
 assert(rmap.track.pos == one("A"), "get gold desynced the tracker")
 print("expiry scope ok")
+
+-- walking into the only room with this fingerprint in another area (a guild
+-- hub reached from outside) links it and its way back; no twin is made
+fresh(); start("Hub", { "east" })
+local hx = S.map.rooms[one("Hub")]
+local portal = createRoomID(); addRoom(portal)
+setRoomArea(portal, hx.area + 1)
+setRoomName(portal, "Portal"); setRoomCoordinates(portal, 0, 0, 0)
+setRoomUserData(portal, "fp", "Portal|west")
+go("e", "Portal", { "west" })
+assert(S.roomCount() == 2 and #byName("Portal") == 1, "cross-area twin made")
+assert(hx.exits.east == portal and S.map.rooms[portal].exits.west == one("Hub"),
+    "cross-area link")
+assert(rmap.track.pos == portal, "not in the portal room")
+print("cross-area link ok")
+
+-- Mudlet's generic_mapper is removed on start; other packages are kept
+do
+    local removed = {}
+    getPackages = function() return { "generic_mapper", "echo" } end
+    uninstallPackage = function(n) removed[#removed + 1] = n end
+    fresh()
+    assert(#removed == 1 and removed[1] == "generic_mapper", "generic_mapper not removed")
+    getPackages, uninstallPackage = nil, nil
+    print("generic_mapper removal ok")
+end

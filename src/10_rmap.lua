@@ -12,7 +12,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud-mapper"
-rmap.version = "0.0.26"
+rmap.version = "0.0.27"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
@@ -73,7 +73,12 @@ function rmap.stop()
     for i = 1, #rmap.ids.trigger do killTrigger(rmap.ids.trigger[i]) end
     for i = 1, #rmap.ids.alias do killAlias(rmap.ids.alias[i]) end
     rmap.job = nil
-    if rmap.pane then pcall(rmap.pane.hide, rmap.pane) end
+    -- delete, not hide: a hidden pane stays registered under its name, and the
+    -- next install then builds a second one while the GUI adopts the stale one
+    if rmap.pane then
+        pcall(rmap.pane.delete or rmap.pane.hide, rmap.pane)
+        rmap.pane = nil
+    end
     if rmap.ids.timer then killTimer(rmap.ids.timer) end
     -- the one documented global exception (see 60_speedwalk): put back the
     -- profile's own, but only if the global is still ours

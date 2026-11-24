@@ -19,7 +19,7 @@ if rmap and rmap.stop then rmap.stop() end
 rmap = {}
 rmap.restart = wasStarted
 rmap.name = "retromud-mapper"
-rmap.version = "0.0.26"
+rmap.version = "0.0.27"
 rmap.inits = {}
 rmap.started = false
 rmap.mapping = false
@@ -80,7 +80,12 @@ function rmap.stop()
     for i = 1, #rmap.ids.trigger do killTrigger(rmap.ids.trigger[i]) end
     for i = 1, #rmap.ids.alias do killAlias(rmap.ids.alias[i]) end
     rmap.job = nil
-    if rmap.pane then pcall(rmap.pane.hide, rmap.pane) end
+    -- delete, not hide: a hidden pane stays registered under its name, and the
+    -- next install then builds a second one while the GUI adopts the stale one
+    if rmap.pane then
+        pcall(rmap.pane.delete or rmap.pane.hide, rmap.pane)
+        rmap.pane = nil
+    end
     if rmap.ids.timer then killTimer(rmap.ids.timer) end
     -- the one documented global exception (see 60_speedwalk): put back the
     -- profile's own, but only if the global is still ours
@@ -1014,6 +1019,15 @@ end
 
 -- Non-Euclidean link (decision step 2): the single nearby room with this
 -- fingerprint whose way back toward us is not already linked elsewhere.
+local function acrossAreas(from, b, opp)
+    local c = candidates(b.fingerprint)
+    local id = #c == 1 and c[1]
+    if id and id ~= from and getRoomArea(id) ~= getRoomArea(from)
+        and not getRoomExits(id)[opp] and sameDesc(id, b) then
+        return id
+    end
+end
+
 local function near(from, fp, opp, dir, blk)
     if not rmap.settings.nearMerge then return nil end
     local x, y, z = getRoomCoordinates(from)
@@ -1110,6 +1124,18 @@ function B.advance(from, dir, b, peer)
             setInferred(from, dir, false)
         end
         return to
+    end
+    -- A room in another area that is the only one with this fingerprint and
+    -- has no way back yet is the room we walked into (a guild or hub reached
+    -- from outside): link it instead of making a twin. Not for previews.
+    local far = not peer and acrossAreas(from, b, d.opp)
+    if far then
+        link(from, far, dir)
+        confirm(far)
+        setInferred(from, dir, false)
+        link(far, from, d.opp)
+        setInferred(far, d.opp, true)
+        return far
     end
     local x, y, z = getRoomCoordinates(from)
     x, y, z = freeCell(x + d.dx, y + d.dy, z + d.dz,
@@ -1306,6 +1332,9 @@ local function build()
     end)
     if ok and box then
         rmap.pane = box
+        -- rmap.stop hides the pane on uninstall, and a rebuilt or reused pane
+        -- comes back hidden (seen live after an update): always show it
+        pcall(box.show, box)
         raiseEvent("rmap.onUiReady", NAME)
     end
 end
@@ -1335,6 +1364,18 @@ rmap.api = {
 }
 
 rmap.inits[#rmap.inits + 1] = build
+
+-- Mudlet's own generic mapper also reads the prompt and room text, and it
+-- fights this one for the map. Remove it; Package Manager can bring it back.
+rmap.inits[#rmap.inits + 1] = function()
+    if not (getPackages and uninstallPackage) then return end
+    for _, pkg in ipairs(getPackages()) do
+        if pkg == "generic_mapper" then
+            uninstallPackage(pkg)
+            rmap.out("removed Mudlet's generic_mapper (it competes with this mapper)", "skip")
+        end
+    end
+end
 
 -- 80_commands: all aliases (`rmap &lt;command&gt;`).
 -- Contract (docs/design.md): rmap start/stop/goto/path/where/scan/undo/fix/

@@ -219,6 +219,15 @@ end
 
 -- Non-Euclidean link (decision step 2): the single nearby room with this
 -- fingerprint whose way back toward us is not already linked elsewhere.
+local function acrossAreas(from, b, opp)
+    local c = candidates(b.fingerprint)
+    local id = #c == 1 and c[1]
+    if id and id ~= from and getRoomArea(id) ~= getRoomArea(from)
+        and not getRoomExits(id)[opp] and sameDesc(id, b) then
+        return id
+    end
+end
+
 local function near(from, fp, opp, dir, blk)
     if not rmap.settings.nearMerge then return nil end
     local x, y, z = getRoomCoordinates(from)
@@ -315,6 +324,18 @@ function B.advance(from, dir, b, peer)
             setInferred(from, dir, false)
         end
         return to
+    end
+    -- A room in another area that is the only one with this fingerprint and
+    -- has no way back yet is the room we walked into (a guild or hub reached
+    -- from outside): link it instead of making a twin. Not for previews.
+    local far = not peer and acrossAreas(from, b, d.opp)
+    if far then
+        link(from, far, dir)
+        confirm(far)
+        setInferred(from, dir, false)
+        link(far, from, d.opp)
+        setInferred(far, d.opp, true)
+        return far
     end
     local x, y, z = getRoomCoordinates(from)
     x, y, z = freeCell(x + d.dx, y + d.dy, z + d.dz,
